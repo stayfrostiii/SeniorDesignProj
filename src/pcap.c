@@ -6,7 +6,67 @@
 #include <netinet/udp.h> // For UDP header
 #include <arpa/inet.h>   // For inet_ntoa()
 #include <netinet/ip_icmp.h> // Add at the top
+#include <pthread.h>
 #include <pcap.h>
+
+/* Global Variables */
+
+// Multithread stuff
+pthread_mutex_t lock;
+pthread_cond_t cond;
+int pauseCap = 0;
+
+struct pc_args
+{
+    
+};
+
+struct ui_args
+{
+
+};
+
+void* pc_thread(void* args)
+{
+    while(1)
+    {
+        pthread_mutex_lock(&lock);
+
+        // If user input, pauseCap = 1
+        if (pauseCap)
+        {
+            pthread_mutex_unlock(&lock);
+
+            while(pauseCap)
+                usleep(100000);
+
+            pauseCap = 0;
+            pthread_mutex_lock(&lock);
+        }
+
+        pthread_mutex_unlock(&lock);
+
+        // Capture packets here
+
+    }
+}
+
+void* ui_thread(void* args)
+{
+    while(1)
+    {
+        // Wait for user input from connection
+        // If user input
+        if ()
+        {
+            pthread_mutex_lock(&lock);
+            pauseCap = 1;
+            pthread_cond_signal(&cond);
+            // Code for modifications
+            pthread_mutex_unlock(&lock);
+        }
+    }
+}
 
 void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) {
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
@@ -54,10 +114,15 @@ int main()
     pcap_t* handle;
     int activate;
 
+    // For inputting IP address for ping command
     char ipaddr[256];
     char pingComm[256] = "ping -c 10 ";
     int ipaddrFound;
     int result;
+
+    // Thread stuff
+    pthread_t threads[2];
+
 
     /* Finds all devices */
     if (pcap_findalldevs(&allDevs, errbuf) != 0)
@@ -103,21 +168,21 @@ int main()
 
     ipaddrFound = 0;
 
-    while (ipaddrFound == 0)
-    {
-        printf("Enter IP address: ");
-        scanf("%255s", ipaddr);
-        strcat(pingComm, ipaddr);
-        strcat(pingComm, " > /dev/null 2>&1 &");
-        printf("\nrunning: %s\n", pingComm);
-        result = system(pingComm);
+    // while (ipaddrFound == 0)
+    // {
+    //     printf("Enter IP address: ");
+    //     scanf("%255s", ipaddr);
+    //     strcat(pingComm, ipaddr);
+    //     strcat(pingComm, " > /dev/null 2>&1 &");
+    //     printf("\nrunning: %s\n", pingComm);
+    //     result = system(pingComm);
 
-        if (result == 0) 
-            ipaddrFound = 1;
+    //     if (result == 0) 
+    //         ipaddrFound = 1;
 
-        else 
-            printf("Ping command failed.\n");
-    }
+    //     else 
+    //         printf("Ping command failed.\n");
+    // }
 
     if (pcap_loop(handle, -1, packet_handler, NULL) < 0) 
     {
