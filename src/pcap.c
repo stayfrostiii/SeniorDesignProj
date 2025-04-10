@@ -8,6 +8,8 @@
 #include <netinet/ip_icmp.h> // Add at the top
 #include <pthread.h>
 #include <pcap.h>
+#include <time.h>
+#include <unistd.h>
 
 /* Global Variables */
 
@@ -16,59 +18,19 @@ pthread_mutex_t lock;
 pthread_cond_t cond;
 int pauseCap = 0;
 
-struct pc_args
+typedef struct {
+    pcap_t* handle;
+} pc_args;
+
+typedef struct 
 {
-    
-};
 
-struct ui_args
-{
-
-};
-
-void* pc_thread(void* args)
-{
-    while(1)
-    {
-        pthread_mutex_lock(&lock);
-
-        // If user input, pauseCap = 1
-        if (pauseCap)
-        {
-            pthread_mutex_unlock(&lock);
-
-            while(pauseCap)
-                usleep(100000);
-
-            pauseCap = 0;
-            pthread_mutex_lock(&lock);
-        }
-
-        pthread_mutex_unlock(&lock);
-
-        // Capture packets here
-
-    }
-}
-
-void* ui_thread(void* args)
-{
-    while(1)
-    {
-        // Wait for user input from connection
-        // If user input
-        if ()
-        {
-            pthread_mutex_lock(&lock);
-            pauseCap = 1;
-            pthread_cond_signal(&cond);
-            // Code for modifications
-            pthread_mutex_unlock(&lock);
-        }
-    }
-}
+} ui_args;
 
 void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) {
+
+    char packet_info[256];
+
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
     struct tcphdr *tcp_header;
     struct udphdr *udp_header;
@@ -81,26 +43,117 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     /* Convert IP in binary form to readable string */
     inet_ntop(AF_INET, &(ip_header->ip_src), source_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
-    printf("Source IP: %s\n", source_ip);
-    printf("Destination IP: %s\n", dest_ip);
+    // printf("Source IP: %s\n", source_ip);
+    // printf("Destination IP: %s\n", dest_ip);
+
+    strcpy(packet_info, "Source IP: ");
+    strcat(packet_info, source_ip);
+    strcat(packet_info, "\n");
+    strcat(packet_info, "Destination IP: ");
+    strcat(packet_info, dest_ip);
+    strcat(packet_info, "\n");
 
     // Check the protocol type (TCP or UDP)
     if (ip_header->ip_p == IPPROTO_TCP) {
         tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
-        printf("Protocol: TCP\n");
-        printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
-        printf("Destination Port: %d\n", ntohs(tcp_header->th_dport));
+        // printf("Protocol: TCP\n");
+        // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+        // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport));
+
+        sprintf(packet_info, "%s%s%d\n%s%d\n", 
+                "Protocol: TCP\n",
+                "Source Port: ",
+                ntohs(tcp_header->th_sport),
+                "Destination Port: ",
+                ntohs(tcp_header->th_dport)
+        );
+
     } else if (ip_header->ip_p == IPPROTO_UDP) {
         udp_header = (struct udphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
-        printf("Protocol: UDP\n");
-        printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
-        printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
+        // printf("Protocol: UDP\n");
+        // printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
+        // printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
+
+        sprintf(packet_info, "%s%s%d\n%s%d\n", 
+            "Protocol: UDP\n",
+            "Source Port: ",
+            ntohs(udp_header->uh_sport),
+            "Destination Port: ",
+            ntohs(udp_header->uh_dport)
+        );
+
     } if (ip_header->ip_p == IPPROTO_ICMP) {
-        printf("Protocol: ICMP (ping)\n");
+        // printf("Protocol: ICMP (ping)\n");
+        
+        sprintf(packet_info, "%s", "Protocol: ICMP (ping)\n");
     } else {
-        printf("Protocol: Other\n");
+        // printf("Protocol: Other\n");
+        
+        sprintf(packet_info, "%s", "Protocol: Other\n");
     }
-    printf("-----------------------------\n");
+    // printf("-----------------------------\n");
+    sprintf(packet_info, "%s", "-----------------------------\n");
+
+    printf("%s", packet_info);
+}
+
+void* pc_thread(void* args)
+{
+    pc_args* args_f = (pc_args*)args;
+
+    while(1)
+    {
+        pthread_mutex_lock(&lock);
+
+        // If user input, pauseCap = 1
+        if (pauseCap)
+        {
+            pthread_mutex_unlock(&lock);
+
+            while(pauseCap) {};
+
+            pthread_mutex_lock(&lock);
+        }
+
+        pthread_mutex_unlock(&lock);
+
+        // Capture packets here
+        if (pcap_loop(args_f->handle, 1, packet_handler, NULL) < 0) 
+        {
+            printf("Error capturing packets: %s\n", pcap_geterr(args_f->handle));
+            pcap_close(args_f->handle);
+            exit(1);
+        }
+
+    }
+}
+
+void* ui_thread(void* args)
+{
+    struct timespec req, rem;
+    req.tv_sec = 1;
+    req.tv_nsec = 500000000L;
+
+    while(1)
+    {
+        // Wait for user input from connection
+        // If user input
+
+        sleep(5);
+
+        pthread_mutex_lock(&lock);
+        pauseCap = 1;
+        pthread_cond_signal(&cond);
+        // Code for modifications
+
+        nanosleep(&req, &rem);
+        printf("Modification made...\n");
+        nanosleep(&req, &rem);
+
+        pauseCap = 0;
+
+        pthread_mutex_unlock(&lock);
+    }
 }
 
 int main() 
@@ -122,7 +175,8 @@ int main()
 
     // Thread stuff
     pthread_t threads[2];
-
+    int pcT, uiT;
+    pc_args pcArg;
 
     /* Finds all devices */
     if (pcap_findalldevs(&allDevs, errbuf) != 0)
@@ -168,28 +222,12 @@ int main()
 
     ipaddrFound = 0;
 
-    // while (ipaddrFound == 0)
-    // {
-    //     printf("Enter IP address: ");
-    //     scanf("%255s", ipaddr);
-    //     strcat(pingComm, ipaddr);
-    //     strcat(pingComm, " > /dev/null 2>&1 &");
-    //     printf("\nrunning: %s\n", pingComm);
-    //     result = system(pingComm);
+    pcArg.handle = handle;
+    pcT = pthread_create(&threads[0], NULL, pc_thread, &pcArg);
+    uiT = pthread_create(&threads[1], NULL, ui_thread, NULL);
 
-    //     if (result == 0) 
-    //         ipaddrFound = 1;
-
-    //     else 
-    //         printf("Ping command failed.\n");
-    // }
-
-    if (pcap_loop(handle, -1, packet_handler, NULL) < 0) 
-    {
-        printf("Error capturing packets: %s\n", pcap_geterr(handle));
-        pcap_close(handle);
-        return -1;
-    }
+    pthread_join(threads[0], NULL);
+    pthread_join(threads[1], NULL);
 
     pcap_close(handle);
     return 0;
