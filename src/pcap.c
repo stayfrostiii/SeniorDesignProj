@@ -69,7 +69,7 @@ void* pc_thread(void* args)
 //         }
 //     }
 // }
-} ui_args;
+ui_args;
 
 void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) {
 
