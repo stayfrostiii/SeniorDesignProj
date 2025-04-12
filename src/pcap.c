@@ -8,6 +8,8 @@
 #include <netinet/ip_icmp.h> // Add at the top
 #include <pthread.h>
 #include <pcap.h>
+#include <nftables/libnftables.h>
+#include <unistd.h>
 #include <time.h>
 #include <unistd.h>
 #include <msgpack.h>
@@ -32,7 +34,50 @@ typedef struct {
 typedef struct 
 {
 
-} ui_args;
+};
+
+void* pc_thread(void* args)
+{
+    while(1)
+    {
+        pthread_mutex_lock(&lock);
+
+        // If user input, pauseCap = 1
+        if (pauseCap)
+        {
+            pthread_mutex_unlock(&lock);
+
+            while(pauseCap)
+                usleep(100000);
+
+            pauseCap = 0;
+            pthread_mutex_lock(&lock);
+        }
+
+        pthread_mutex_unlock(&lock);
+
+        // Capture packets here
+
+    }
+}
+
+// void* ui_thread(void* args)
+// {
+//     while(1)
+//     {
+//         // Wait for user input from connection
+//         // If user input
+//         if ()
+//         {
+//             pthread_mutex_lock(&lock);
+//             pauseCap = 1;
+//             pthread_cond_signal(&cond);
+//             // Code for modifications
+//             pthread_mutex_unlock(&lock);
+//         }
+//     }
+// }
+ui_args;
 
 // Packet stuff
 Packet packet_buffer1[1000];
@@ -245,15 +290,92 @@ int main()
     // Thread stuff
     pthread_t threads[3];
     int pcT, uiT, pbT;
+
+    //nftables stuff
+    struct nft_ctx *ctx;
+    const char *cmd;
+    
+    ctx = nft_ctx_new(NFT_CTX_DEFAULT);
+    if (!ctx)
+    {
+        fprintf(stderr,"nftables failed to creat");
+    }
+
+    //Tables
+    const char *tables[] = 
+    {
+        "add table ip ipv4_table",       // IPv4 table
+        "add table ip6 ipv6_table",      // IPv6 table
+        "add table arp arp_table",       // ARP table
+        "add table inet combined_table" // Combined IPv4/IPv6 table
+    };
+
+    for (int i = 0; i < 4; i++) 
+    {
+        cmd = tables[i];
+        if (nft_run_cmd_from_buffer(ctx, cmd) < 0)
+        {
+            fprintf(stderr, "Failed to create table");
+        } 
+        else 
+        {
+            printf("Successfully created table: %s\n", cmd);
+        }
+    }
+
+    //chains
+    const char *chains[] = 
+    {
+        "add chain ip ipv4_table input_chain { type filter hook input priority 0; policy drop; }",
+        "add chain ip6 ipv6_table input_chain { type filter hook input priority 0; policy accept; }",
+        "add chain arp arp_table arp_chain { type filter hook input priority 0; policy accept; }",
+        "add chain inet combined_table input_chain { type filter hook input priority 0; policy accept; }"
+    };
+
+    for (int i = 0; i < 4; i++) 
+    {
+        cmd = chains[i];
+        if (nft_run_cmd_from_buffer(ctx, cmd) < 0)
+        {
+            fprintf(stderr, "Failed to create chain");
+        } 
+        else 
+        {
+            printf("Successfully created chain: %s\n", cmd);
+        }
+    }
+    //rules
+    const char *rules[] = {
+        "add rule ip ipv4_table input_chain ip saddr 192.168.1.0/24 accept",
+        "add rule ip6 ipv6_table input_chain ip6 saddr fe80::/10 accept",
+        "add rule arp arp_table arp op request accept",
+        "add rule inet combined_table input_chain ct state established,related accept"
+    };
+    for (int i = 0; i < 4; i++) 
+    {
+        cmd = rules[i];
+        if (nft_run_cmd_from_buffer(ctx, cmd) < 0)
+        {
+            fprintf(stderr, "Failed to add rule");
+        } 
+        else 
+        {
+            printf("Successfully added rule: %s\n", cmd);
+        }
+    }
+
+    int pcT, uiT;
     pc_args pcArg;
 
+
     /* Finds all devices */
+
     if (pcap_findalldevs(&allDevs, errbuf) != 0)
     {
         printf("%s\n", errbuf);
         return -1;
     }
-
+     
     /* Take the first device */
     dev = *allDevs;
     printf("%s\n", dev.name);
