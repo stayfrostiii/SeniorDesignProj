@@ -10,6 +10,7 @@
 #include <pcap.h>
 #include <time.h>
 #include <unistd.h>
+#include <msgpack.h>
 
 /* Global Variables */
 
@@ -17,6 +18,12 @@
 pthread_mutex_t lock;
 pthread_cond_t cond;
 int pauseCap = 0;
+
+typedef struct {
+    char src_ip[16];
+    char dest_ip[16];
+    char prot[10];
+} Packet;
 
 typedef struct {
     pcap_t* handle;
@@ -27,9 +34,40 @@ typedef struct
 
 } ui_args;
 
-void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) {
+// Packet stuff
+Packet packet_buffer1[1000];
+Packet packet_buffer2[1000];
 
-    char packet_info[256];
+int pbuf_size = 0;
+int pbuf_active = 0;
+int logFile_counter = 0;
+
+void serialize_packet(Packet *p, msgpack_packer *pk)
+{
+    msgpack_pack_map(pk, 3);  // 3 key-value pairs (src_ip, dst_ip, protocol)
+    
+    // src_ip
+    msgpack_pack_str(pk, strlen("src_ip"));
+    msgpack_pack_str_body(pk, "src_ip", strlen("src_ip"));
+    msgpack_pack_str(pk, strlen(p->src_ip));
+    msgpack_pack_str_body(pk, p->src_ip, strlen(p->src_ip));
+    
+    // dst_ip
+    msgpack_pack_str(pk, strlen("dst_ip"));
+    msgpack_pack_str_body(pk, "dst_ip", strlen("dst_ip"));
+    msgpack_pack_str(pk, strlen(p->dest_ip));
+    msgpack_pack_str_body(pk, p->dest_ip, strlen(p->dest_ip));
+    
+    // protocol
+    msgpack_pack_str(pk, strlen("protocol"));
+    msgpack_pack_str_body(pk, "protocol", strlen("protocol"));
+    msgpack_pack_str(pk, strlen(p->prot));
+    msgpack_pack_str_body(pk, p->prot, strlen(p->prot));
+}
+
+void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) 
+{
+    Packet packet_info;
 
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
     struct tcphdr *tcp_header;
@@ -38,63 +76,95 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     printf("Packet captured: Length = %d bytes\n", pkthdr->len);
 
     // Extract IP header information
-    char source_ip[INET_ADDRSTRLEN], dest_ip[INET_ADDRSTRLEN];
+    char src_ip[INET_ADDRSTRLEN], dest_ip[INET_ADDRSTRLEN];
 
     /* Convert IP in binary form to readable string */
-    inet_ntop(AF_INET, &(ip_header->ip_src), source_ip, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
-    // printf("Source IP: %s\n", source_ip);
-    // printf("Destination IP: %s\n", dest_ip);
+    printf("Source IP: %s\n", src_ip);
+    printf("Destination IP: %s\n", dest_ip);
 
-    strcpy(packet_info, "Source IP: ");
-    strcat(packet_info, source_ip);
-    strcat(packet_info, "\n");
-    strcat(packet_info, "Destination IP: ");
-    strcat(packet_info, dest_ip);
-    strcat(packet_info, "\n");
+    strcpy(packet_info.src_ip, src_ip);
+    strcpy(packet_info.dest_ip, dest_ip);
 
     // Check the protocol type (TCP or UDP)
     if (ip_header->ip_p == IPPROTO_TCP) {
         tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
-        // printf("Protocol: TCP\n");
-        // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
-        // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport));
+        /*
+        printf("Protocol: TCP\n");
+        printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+        printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+        */
 
-        sprintf(packet_info, "%s%s%d\n%s%d\n", 
-                "Protocol: TCP\n",
-                "Source Port: ",
-                ntohs(tcp_header->th_sport),
-                "Destination Port: ",
-                ntohs(tcp_header->th_dport)
-        );
+        strcpy(packet_info.prot, "TCP");
 
     } else if (ip_header->ip_p == IPPROTO_UDP) {
         udp_header = (struct udphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
-        // printf("Protocol: UDP\n");
-        // printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
-        // printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
+        /*
+        printf("Protocol: UDP\n");
+        printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
+        printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
+        */
 
-        sprintf(packet_info, "%s%s%d\n%s%d\n", 
-            "Protocol: UDP\n",
-            "Source Port: ",
-            ntohs(udp_header->uh_sport),
-            "Destination Port: ",
-            ntohs(udp_header->uh_dport)
-        );
+        strcpy(packet_info.prot, "UDP");
 
     } if (ip_header->ip_p == IPPROTO_ICMP) {
         // printf("Protocol: ICMP (ping)\n");
-        
-        sprintf(packet_info, "%s", "Protocol: ICMP (ping)\n");
+        strcpy(packet_info.prot, "ICMP");
     } else {
         // printf("Protocol: Other\n");
-        
-        sprintf(packet_info, "%s", "Protocol: Other\n");
+        strcpy(packet_info.prot, "Other");
     }
-    // printf("-----------------------------\n");
-    sprintf(packet_info, "%s", "-----------------------------\n");
+    printf("-----------------------------\n");
 
-    printf("%s", packet_info);
+    if (pbuf_active == 0)
+    {
+        packet_buffer1[pbuf_size] = packet_info;
+    }
+    else
+    {
+        packet_buffer2[pbuf_size] = packet_info;
+    }
+    pbuf_size++;
+}
+
+void *pb_thread(void* args)
+{
+    msgpack_sbuffer sbuf; /* buffer */
+    msgpack_packer pk;    /* packer */
+
+    msgpack_sbuffer_init(&sbuf); /* initialize buffer */
+    msgpack_packer_init(&pk, &sbuf, msgpack_sbuffer_write); /* initialize packer */
+
+    while(1)
+    {
+        if (pbuf_size >= 30)
+        {
+            char file_name[32] = "./logs/packets";
+            char temp[4];
+
+            pbuf_active = ~pbuf_active;
+            for (int i = 0; i < pbuf_size; i++)
+            {
+                serialize_packet(&packet_buffer1[i], &pk);
+            }
+
+            sprintf(temp, "%02d", logFile_counter);
+            strcat(file_name, temp);
+            strcat(file_name, ".msgpack");
+            FILE *file = fopen(file_name, "wb");
+            fwrite(sbuf.data, 1, sbuf.size, file);
+            fclose(file);
+            pbuf_size = 0;
+            logFile_counter++;
+            if (logFile_counter >= 4)
+            {
+                logFile_counter = 0;
+            }
+        }
+    }
+    msgpack_sbuffer_destroy(&sbuf);
+
 }
 
 void* pc_thread(void* args)
@@ -124,7 +194,6 @@ void* pc_thread(void* args)
             pcap_close(args_f->handle);
             exit(1);
         }
-
     }
 }
 
@@ -139,20 +208,20 @@ void* ui_thread(void* args)
         // Wait for user input from connection
         // If user input
 
-        sleep(5);
+        // sleep(5);
 
-        pthread_mutex_lock(&lock);
-        pauseCap = 1;
-        pthread_cond_signal(&cond);
-        // Code for modifications
+        // pthread_mutex_lock(&lock);
+        // pauseCap = 1;
+        // pthread_cond_signal(&cond);
+        // // Code for modifications
 
-        nanosleep(&req, &rem);
-        printf("Modification made...\n");
-        nanosleep(&req, &rem);
+        // nanosleep(&req, &rem);
+        // printf("Modification made...\n");
+        // nanosleep(&req, &rem);
 
-        pauseCap = 0;
+        // pauseCap = 0;
 
-        pthread_mutex_unlock(&lock);
+        // pthread_mutex_unlock(&lock);
     }
 }
 
@@ -174,8 +243,8 @@ int main()
     int result;
 
     // Thread stuff
-    pthread_t threads[2];
-    int pcT, uiT;
+    pthread_t threads[3];
+    int pcT, uiT, pbT;
     pc_args pcArg;
 
     /* Finds all devices */
@@ -225,9 +294,11 @@ int main()
     pcArg.handle = handle;
     pcT = pthread_create(&threads[0], NULL, pc_thread, &pcArg);
     uiT = pthread_create(&threads[1], NULL, ui_thread, NULL);
+    pbT = pthread_create(&threads[2], NULL, pb_thread, NULL);
 
     pthread_join(threads[0], NULL);
     pthread_join(threads[1], NULL);
+    pthread_join(threads[2], NULL);
 
     pcap_close(handle);
     return 0;
