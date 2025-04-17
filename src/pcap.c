@@ -14,6 +14,8 @@
 #include <unistd.h>
 #include <msgpack.h>
 
+// gcc src/pcap.c -o build/pcap -lpcap -lmsgpackc -lpthread -lnftables 
+
 /* Global Variables */
 
 // Multithread stuff
@@ -34,54 +36,11 @@ typedef struct {
 typedef struct 
 {
 
-};
-
-void* pc_thread(void* args)
-{
-    while(1)
-    {
-        pthread_mutex_lock(&lock);
-
-        // If user input, pauseCap = 1
-        if (pauseCap)
-        {
-            pthread_mutex_unlock(&lock);
-
-            while(pauseCap)
-                usleep(100000);
-
-            pauseCap = 0;
-            pthread_mutex_lock(&lock);
-        }
-
-        pthread_mutex_unlock(&lock);
-
-        // Capture packets here
-
-    }
-}
-
-// void* ui_thread(void* args)
-// {
-//     while(1)
-//     {
-//         // Wait for user input from connection
-//         // If user input
-//         if ()
-//         {
-//             pthread_mutex_lock(&lock);
-//             pauseCap = 1;
-//             pthread_cond_signal(&cond);
-//             // Code for modifications
-//             pthread_mutex_unlock(&lock);
-//         }
-//     }
-// }
-ui_args;
+} ui_args;
 
 // Packet stuff
-Packet packet_buffer1[1000];
-Packet packet_buffer2[1000];
+Packet packet_buffer1[10000];
+Packet packet_buffer2[10000];
 
 int pbuf_size = 0;
 int pbuf_active = 0;
@@ -116,7 +75,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
     struct tcphdr *tcp_header;
-    struct udphdr *udp_header;
+    struct udphdr *udp_header; 
 
     printf("Packet captured: Length = %d bytes\n", pkthdr->len);
 
@@ -126,42 +85,38 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     /* Convert IP in binary form to readable string */
     inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
-    printf("Source IP: %s\n", src_ip);
-    printf("Destination IP: %s\n", dest_ip);
 
     strcpy(packet_info.src_ip, src_ip);
     strcpy(packet_info.dest_ip, dest_ip);
 
     // Check the protocol type (TCP or UDP)
-    if (ip_header->ip_p == IPPROTO_TCP) {
+    if (ip_header->ip_p == IPPROTO_TCP) 
+    {
         tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
-        /*
-        printf("Protocol: TCP\n");
-        printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
-        printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
-        */
 
         strcpy(packet_info.prot, "TCP");
 
-    } else if (ip_header->ip_p == IPPROTO_UDP) {
+    } 
+    
+    else if (ip_header->ip_p == IPPROTO_UDP) 
+    {
         udp_header = (struct udphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
-        /*
-        printf("Protocol: UDP\n");
-        printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
-        printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
-        */
 
         strcpy(packet_info.prot, "UDP");
 
-    } if (ip_header->ip_p == IPPROTO_ICMP) {
-        // printf("Protocol: ICMP (ping)\n");
+    } 
+    
+    else if (ip_header->ip_p == IPPROTO_ICMP) 
+    {
         strcpy(packet_info.prot, "ICMP");
-    } else {
-        // printf("Protocol: Other\n");
+    } 
+    
+    else 
+    {
         strcpy(packet_info.prot, "Other");
     }
-    printf("-----------------------------\n");
 
+    /* Prevent overloading buffer array */
     if (pbuf_active == 0)
     {
         packet_buffer1[pbuf_size] = packet_info;
@@ -183,7 +138,7 @@ void *pb_thread(void* args)
 
     while(1)
     {
-        if (pbuf_size >= 30)
+        if (pbuf_size >= 8000)
         {
             char file_name[32] = "./logs/packets";
             char temp[4];
@@ -209,7 +164,6 @@ void *pb_thread(void* args)
         }
     }
     msgpack_sbuffer_destroy(&sbuf);
-
 }
 
 void* pc_thread(void* args)
@@ -290,6 +244,7 @@ int main()
     // Thread stuff
     pthread_t threads[3];
     int pcT, uiT, pbT;
+    pc_args pcArg;
 
     //nftables stuff
     struct nft_ctx *ctx;
@@ -363,10 +318,6 @@ int main()
             printf("Successfully added rule: %s\n", cmd);
         }
     }
-
-    int pcT, uiT;
-    pc_args pcArg;
-
 
     /* Finds all devices */
 
