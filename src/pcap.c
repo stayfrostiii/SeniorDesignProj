@@ -17,6 +17,8 @@
 #include <fcntl.h>  // For open()
 #include <unistd.h> // For read()
 
+// gcc src/pcap.c -o build/pcap -lpcap -lmsgpackc -lpthread -lnftables 
+
 /* Global Variables */
 int counter = 0;
 // Packet capture stuff
@@ -39,6 +41,7 @@ typedef struct {
 
 typedef struct 
 {
+
 
 };ui_args;
 
@@ -71,6 +74,7 @@ void* pipe_thread(void* args) {
     if (bytes_read > 0) {
         buffer[bytes_read] = '\0'; // Null-terminate the string
         printf("Received IP from pipe: %s\n", buffer);
+
 
         // Add a rule to blacklist the IP
         struct nft_ctx *ctx = nft_ctx_new(NFT_CTX_DEFAULT);
@@ -145,14 +149,13 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     /* Convert IP in binary form to readable string */
     inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
-    printf("Source IP: %s\n", src_ip);
-    printf("Destination IP: %s\n", dest_ip);
 
     strcpy(packet_info.src_ip, src_ip);
     strcpy(packet_info.dest_ip, dest_ip);
 
     // Check the protocol type (TCP or UDP)
-    if (ip_header->ip_p == IPPROTO_TCP) {
+    if (ip_header->ip_p == IPPROTO_TCP) 
+    {
         tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
 
         /*For nDPI portion*/
@@ -164,10 +167,13 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
         printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
 
-        strcpy(packet_info.prot, "TCP");
 
-    } else if (ip_header->ip_p == IPPROTO_UDP) {
+    } 
+    
+    else if (ip_header->ip_p == IPPROTO_UDP) 
+    {
         udp_header = (struct udphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
+
         payload_offset = 14 + (ip_header->ip_hl << 2) + sizeof(struct udphdr); // Ethernet + IP + UDP
         payload_length = pkthdr->len - payload_offset;
         payload = (unsigned char *)(packet + payload_offset);
@@ -177,11 +183,15 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
         */
 
+
         strcpy(packet_info.prot, "UDP");
 
-    } if (ip_header->ip_p == IPPROTO_ICMP) {
-        // printf("Protocol: ICMP (ping)\n");
+    } 
+    
+    else if (ip_header->ip_p == IPPROTO_ICMP) 
+    {
         strcpy(packet_info.prot, "ICMP");
+
     } else {
         payload = NULL;
         payload_length = 0;
@@ -220,6 +230,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     }
     printf("-----------------------------\n");
 
+
+    /* Prevent overloading buffer array */
     if (pbuf_active == 0)
     {
         packet_buffer1[pbuf_size] = packet_info;
@@ -243,7 +255,7 @@ void *pb_thread(void* args)
 
     while(1)
     {
-        if (pbuf_size >= 30)
+        if (pbuf_size >= 8000)
         {
             char file_name[32] = "./logs/packets";
             char temp[4];
@@ -269,7 +281,6 @@ void *pb_thread(void* args)
         }
     }
     msgpack_sbuffer_destroy(&sbuf);
-
 }
 
 void* pc_thread(void* args)
@@ -355,6 +366,7 @@ int main()
 
 
     int pcT, uiT, pbT;
+    pc_args pcArg;
 
     //nDPI stuff
     ndpi_module = ndpi_init_detection_module(detection_tick_resolution);
