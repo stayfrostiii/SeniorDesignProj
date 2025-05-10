@@ -368,13 +368,13 @@ int main()
     int pcT, uiT, pbT;
     pc_args pcArg;
 
-    //nDPI stuff
-    ndpi_module = ndpi_init_detection_module(detection_tick_resolution);
-    if (ndpi_module == NULL) 
-    {
-        fprintf(stderr, "Failed to initialize nDPI module\n");
-        return -1;
-    }
+    // // nDPI stuff
+    // ndpi_module = ndpi_init_detection_module(detection_tick_resolution);
+    // if (ndpi_module == NULL) 
+    // {
+    //     fprintf(stderr, "Failed to initialize nDPI module\n");
+    //     return -1;
+    // }
 
     // Create the pipe thread
     int pipeThreadStatus = pthread_create(&pipeT, NULL, pipe_thread, NULL);
@@ -384,10 +384,10 @@ int main()
         return -1;
     }
     pthread_detach(pipeT);
-    // Set up protocol detection
-    NDPI_PROTOCOL_BITMASK detection_bitmask;
-    NDPI_BITMASK_SET_ALL(detection_bitmask); // Enable detection for all protocols
-    ndpi_set_protocol_detection_bitmask2(ndpi_module, &detection_bitmask);
+    // // Set up protocol detection
+    // NDPI_PROTOCOL_BITMASK detection_bitmask;
+    // NDPI_BITMASK_SET_ALL(detection_bitmask); // Enable detection for all protocols
+    // ndpi_set_protocol_detection_bitmask2(ndpi_module, &detection_bitmask);
 
     //nftables stuff
     struct nft_ctx *ctx;
@@ -465,9 +465,6 @@ int main()
         }
     }
     
-    pc_args pcArg;
-
-
     /* Finds all devices */
 
     if (pcap_findalldevs(&allDevs, errbuf) != 0)
