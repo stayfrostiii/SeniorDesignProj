@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PacketWindow from './pages/PacketWindow';
 import Analyze from './pages/Analyze';
 import Configurations from './pages/Configurations';
-import Settings from './pages/Settings';
+// import Settings from './pages/Settings';
 
 export default function App() {
   return (
@@ -22,7 +22,7 @@ export default function App() {
             <Route path="/" element={<PacketWindow />} />
             <Route path="/analyze" element={<Analyze />} />
             <Route path="/configurations" element={<Configurations />} />
-            <Route path="/settings" element={<Settings />} />
+            {/* <Route path="/settings" element={<Settings />} /> */}
           </Routes>
         </div>
       </div>

@@ -1,2 +1,4 @@
-/build
+/firewall/build
 *.msgpack
+/.vscode
+/ui/server/venv
