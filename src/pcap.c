@@ -13,11 +13,17 @@
 #include <time.h>
 #include <unistd.h>
 #include <msgpack.h>
+#include <ndpi/ndpi_api.h>
+#include <fcntl.h>  // For open()
+#include <unistd.h> // For read()
 
 // gcc src/pcap.c -o build/pcap -lpcap -lmsgpackc -lpthread -lnftables 
 
 /* Global Variables */
-
+int counter = 0;
+// Packet capture stuff
+struct ndpi_detection_module_struct *ndpi_module;
+u_int32_t detection_tick_resolution = 1000;
 // Multithread stuff
 pthread_mutex_t lock;
 pthread_cond_t cond;
@@ -36,15 +42,69 @@ typedef struct {
 typedef struct 
 {
 
-} ui_args;
+
+};ui_args;
 
 // Packet stuff
-Packet packet_buffer1[10000];
-Packet packet_buffer2[10000];
+Packet packet_buffer1[1000];
+Packet packet_buffer2[1000];
 
 int pbuf_size = 0;
 int pbuf_active = 0;
 int logFile_counter = 0;
+
+
+
+//reading ip from pipe
+void* pipe_thread(void* args) {
+    const char *pipe_path = "/tmp/blacklist_pipe"; // Path to the named pipe
+    char buffer[256]; // Buffer to store the IP address
+
+    // Open the named pipe for reading
+    int pipe_fd = open(pipe_path, O_RDONLY);
+    if (pipe_fd < 0) {
+        perror("Failed to open named pipe");
+        pthread_exit(NULL);
+    }
+
+    printf("Listening for IPs on the named pipe...\n");
+
+    // Read from the pipe
+    ssize_t bytes_read = read(pipe_fd, buffer, sizeof(buffer) - 1);
+    if (bytes_read > 0) {
+        buffer[bytes_read] = '\0'; // Null-terminate the string
+        printf("Received IP from pipe: %s\n", buffer);
+
+
+        // Add a rule to blacklist the IP
+        struct nft_ctx *ctx = nft_ctx_new(NFT_CTX_DEFAULT);
+        if (!ctx) {
+            fprintf(stderr, "Failed to initialize nftables context\n");
+            close(pipe_fd);
+            pthread_exit(NULL);
+        }
+
+        char rule[512];
+        snprintf(rule, sizeof(rule),
+                 "add rule inet combined_table input_chain ip saddr %s drop", buffer);
+
+        if (nft_run_cmd_from_buffer(ctx, rule) < 0) {
+            fprintf(stderr, "Failed to add blacklist rule for IP: %s\n", buffer);
+        } else {
+            printf("Successfully added blacklist rule for IP: %s\n", buffer);
+        }
+
+        nft_ctx_free(ctx);
+    } else if (bytes_read == 0) {
+        // End of file (pipe closed on the writing end)
+        printf("Pipe closed by writer. Exiting pipe thread.\n");
+    } else {
+        perror("Error reading from pipe");
+    }
+
+    close(pipe_fd); // Close the pipe
+    pthread_exit(NULL); // Exit the thread after processing the first IP
+}
 
 void serialize_packet(Packet *p, msgpack_packer *pk)
 {
@@ -71,12 +131,16 @@ void serialize_packet(Packet *p, msgpack_packer *pk)
 
 void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) 
 {
+    
     Packet packet_info;
 
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
+    
     struct tcphdr *tcp_header;
-    struct udphdr *udp_header; 
-
+    struct udphdr *udp_header;
+    unsigned char *payload;
+    int payload_offset;
+    int payload_length;
     printf("Packet captured: Length = %d bytes\n", pkthdr->len);
 
     // Extract IP header information
@@ -94,13 +158,31 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     {
         tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
 
-        strcpy(packet_info.prot, "TCP");
+        /*For nDPI portion*/
+        payload_offset = 14 + (ip_header->ip_hl << 2) + (tcp_header->th_off << 2); // Ethernet + IP + TCP
+        payload_length = pkthdr->len - payload_offset;
+        payload = (unsigned char *)(packet + payload_offset);
+        
+        printf("Protocol: TCP\n");
+        printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+        printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+
 
     } 
     
     else if (ip_header->ip_p == IPPROTO_UDP) 
     {
         udp_header = (struct udphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
+
+        payload_offset = 14 + (ip_header->ip_hl << 2) + sizeof(struct udphdr); // Ethernet + IP + UDP
+        payload_length = pkthdr->len - payload_offset;
+        payload = (unsigned char *)(packet + payload_offset);
+        /*
+        printf("Protocol: UDP\n");
+        printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
+        printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
+        */
+
 
         strcpy(packet_info.prot, "UDP");
 
@@ -109,12 +191,45 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     else if (ip_header->ip_p == IPPROTO_ICMP) 
     {
         strcpy(packet_info.prot, "ICMP");
-    } 
-    
-    else 
-    {
+
+    } else {
+        payload = NULL;
+        payload_length = 0;
+        // printf("Protocol: Other\n");
         strcpy(packet_info.prot, "Other");
     }
+    if (payload && payload_length > 0) 
+    {
+
+        // Use nDPI to detect the protocol
+        struct ndpi_flow_struct flow;
+        memset(&flow, 0, sizeof(flow));
+
+        // Process the packet and get the detected protocol
+        ndpi_protocol detected_protocol = ndpi_detection_process_packet(ndpi_module, &flow, payload, payload_length, time(NULL), NULL);
+
+        // Get the protocol ID from the detected_protocol struct
+        u_int16_t protocol_id = ndpi_get_lower_proto(detected_protocol);
+
+        // Get the protocol name using the protocol ID
+        const char *protocol_name = ndpi_get_proto_name(ndpi_module, protocol_id);
+
+        printf("Detected protocol: %s\n", protocol_name);
+
+        // Detect malicious traffic
+        if (strcmp(protocol_name, "Malware") == 0) 
+        {
+            printf("Warning: Malicious traffic detected from %s to %s\n", src_ip, dest_ip);
+        }
+
+        // Detect potential intrusion (e.g., large payloads)
+        if (payload_length > 10000) 
+        { 
+            printf("Potential intrusion detected: Large payload size (%d bytes) from %s to %s\n", payload_length, src_ip, dest_ip);
+        }
+    }
+    printf("-----------------------------\n");
+
 
     /* Prevent overloading buffer array */
     if (pbuf_active == 0)
@@ -126,6 +241,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         packet_buffer2[pbuf_size] = packet_info;
     }
     pbuf_size++;
+    printf("%d\n", counter);
+    counter++;
 }
 
 void *pb_thread(void* args)
@@ -243,8 +360,34 @@ int main()
 
     // Thread stuff
     pthread_t threads[3];
+
+        // Threads for Pipe
+        pthread_t pipeT;
+
+
     int pcT, uiT, pbT;
     pc_args pcArg;
+
+    //nDPI stuff
+    ndpi_module = ndpi_init_detection_module(detection_tick_resolution);
+    if (ndpi_module == NULL) 
+    {
+        fprintf(stderr, "Failed to initialize nDPI module\n");
+        return -1;
+    }
+
+    // Create the pipe thread
+    int pipeThreadStatus = pthread_create(&pipeT, NULL, pipe_thread, NULL);
+    if (pipeThreadStatus != 0) 
+    {
+        fprintf(stderr, "Failed to create pipe thread\n");
+        return -1;
+    }
+    pthread_detach(pipeT);
+    // Set up protocol detection
+    NDPI_PROTOCOL_BITMASK detection_bitmask;
+    NDPI_BITMASK_SET_ALL(detection_bitmask); // Enable detection for all protocols
+    ndpi_set_protocol_detection_bitmask2(ndpi_module, &detection_bitmask);
 
     //nftables stuff
     struct nft_ctx *ctx;
@@ -265,7 +408,7 @@ int main()
         "add table inet combined_table" // Combined IPv4/IPv6 table
     };
 
-    for (int i = 0; i < 4; i++) 
+    for(int i = 0; i < 4; i++) 
     {
         cmd = tables[i];
         if (nft_run_cmd_from_buffer(ctx, cmd) < 0)
@@ -281,7 +424,7 @@ int main()
     //chains
     const char *chains[] = 
     {
-        "add chain ip ipv4_table input_chain { type filter hook input priority 0; policy drop; }",
+        "add chain ip ipv4_table input_chain { type filter hook input priority 0; policy accept; }",
         "add chain ip6 ipv6_table input_chain { type filter hook input priority 0; policy accept; }",
         "add chain arp arp_table arp_chain { type filter hook input priority 0; policy accept; }",
         "add chain inet combined_table input_chain { type filter hook input priority 0; policy accept; }"
@@ -301,12 +444,14 @@ int main()
     }
     //rules
     const char *rules[] = {
-        "add rule ip ipv4_table input_chain ip saddr 192.168.1.0/24 accept",
-        "add rule ip6 ipv6_table input_chain ip6 saddr fe80::/10 accept",
-        "add rule arp arp_table arp op request accept",
-        "add rule inet combined_table input_chain ct state established,related accept"
+        // "add rule ip ipv4_table input_chain ip saddr 192.168.1.0/24 accept",
+        // "add rule ip6 ipv6_table input_chain ip6 saddr fe80::/10 accept",
+        // "add rule inet combined_table input_chain ct state established,related accept",
     };
-    for (int i = 0; i < 4; i++) 
+    
+    int num_rules = sizeof(rules) / sizeof(rules[0]);
+
+    for (int i = 0; i < num_rules; i++) 
     {
         cmd = rules[i];
         if (nft_run_cmd_from_buffer(ctx, cmd) < 0)
@@ -316,8 +461,12 @@ int main()
         else 
         {
             printf("Successfully added rule: %s\n", cmd);
+            
         }
     }
+    
+    pc_args pcArg;
+
 
     /* Finds all devices */
 
@@ -375,4 +524,4 @@ int main()
 
     pcap_close(handle);
     return 0;
-}
+} 
