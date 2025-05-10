@@ -198,37 +198,37 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         // printf("Protocol: Other\n");
         strcpy(packet_info.prot, "Other");
     }
-    if (payload && payload_length > 0) 
-    {
+    // if (payload && payload_length > 0) 
+    // {
 
-        // Use nDPI to detect the protocol
-        struct ndpi_flow_struct flow;
-        memset(&flow, 0, sizeof(flow));
+    //     // Use nDPI to detect the protocol
+    //     struct ndpi_flow_struct flow;
+    //     memset(&flow, 0, sizeof(flow));
 
-        // Process the packet and get the detected protocol
-        ndpi_protocol detected_protocol = ndpi_detection_process_packet(ndpi_module, &flow, payload, payload_length, time(NULL), NULL);
+    //     // Process the packet and get the detected protocol
+    //     ndpi_protocol detected_protocol = ndpi_detection_process_packet(ndpi_module, &flow, payload, payload_length, time(NULL), NULL);
 
-        // Get the protocol ID from the detected_protocol struct
-        u_int16_t protocol_id = ndpi_get_lower_proto(detected_protocol);
+    //     // Get the protocol ID from the detected_protocol struct
+    //     u_int16_t protocol_id = ndpi_get_lower_proto(detected_protocol);
 
-        // Get the protocol name using the protocol ID
-        const char *protocol_name = ndpi_get_proto_name(ndpi_module, protocol_id);
+    //     // Get the protocol name using the protocol ID
+    //     const char *protocol_name = ndpi_get_proto_name(ndpi_module, protocol_id);
 
-        printf("Detected protocol: %s\n", protocol_name);
+    //     printf("Detected protocol: %s\n", protocol_name);
 
-        // Detect malicious traffic
-        if (strcmp(protocol_name, "Malware") == 0) 
-        {
-            printf("Warning: Malicious traffic detected from %s to %s\n", src_ip, dest_ip);
-        }
+    //     // Detect malicious traffic
+    //     if (strcmp(protocol_name, "Malware") == 0) 
+    //     {
+    //         printf("Warning: Malicious traffic detected from %s to %s\n", src_ip, dest_ip);
+    //     }
 
-        // Detect potential intrusion (e.g., large payloads)
-        if (payload_length > 10000) 
-        { 
-            printf("Potential intrusion detected: Large payload size (%d bytes) from %s to %s\n", payload_length, src_ip, dest_ip);
-        }
-    }
-    printf("-----------------------------\n");
+    //     // Detect potential intrusion (e.g., large payloads)
+    //     if (payload_length > 10000) 
+    //     { 
+    //         printf("Potential intrusion detected: Large payload size (%d bytes) from %s to %s\n", payload_length, src_ip, dest_ip);
+    //     }
+    // }
+    // printf("-----------------------------\n");
 
 
     /* Prevent overloading buffer array */
