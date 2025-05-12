@@ -46,8 +46,8 @@ typedef struct
 };ui_args;
 
 // Packet stuff
-Packet packet_buffer1[2500];
-Packet packet_buffer2[2500];
+Packet packet_buffer1[15000];
+Packet packet_buffer2[15000];
 
 int pbuf_size = 0;
 int pbuf_active = 0;
@@ -253,7 +253,7 @@ void *pb_thread(void* args)
 
     while(1)
     {
-        if (pbuf_size > 5000)
+        if (pbuf_size > 10000)
         {
             char file_name[32] = "./logs/packets";
             char temp[4];
