@@ -46,8 +46,8 @@ typedef struct
 };ui_args;
 
 // Packet stuff
-Packet packet_buffer1[15000];
-Packet packet_buffer2[15000];
+Packet packet_buffer1[20000];
+Packet packet_buffer2[20000];
 
 int pbuf_size = 0;
 int pbuf_active = 0;
