@@ -238,7 +238,13 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     {
         packet_buffer2[pbuf_size] = packet_info;
     }
+
     pbuf_size++;
+    
+    if (pbuf_size > 10000)
+    {
+        pbuf_size = 0;
+    }
     printf("%d\n", counter);
     counter++;
 }
@@ -270,7 +276,6 @@ void *pb_thread(void* args)
             FILE *file = fopen(file_name, "wb");
             fwrite(sbuf.data, 1, sbuf.size, file);
             fclose(file);
-            pbuf_size = 0;
             logFile_counter++;
             if (logFile_counter > 9)
             {
