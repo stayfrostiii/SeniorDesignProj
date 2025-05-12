@@ -164,9 +164,9 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         payload_length = pkthdr->len - payload_offset;
         payload = (unsigned char *)(packet + payload_offset);
         
-        // printf("Protocol: TCP\n");
-        // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
-        // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+        printf("Protocol: TCP\n");
+        printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+        printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
 
 
     } 
@@ -276,7 +276,6 @@ void *pb_thread(void* args)
         }
 
         // At this point, pbuf_size > 10000
-        pbuf_size = 0;  // Reset pbuf_size
 
         // Do the rest of the processing
         char file_name[32] = "./logs/packets";
@@ -287,6 +286,8 @@ void *pb_thread(void* args)
         {
             serialize_packet(&packet_buffer1[i], &pk);
         }
+        
+        pbuf_size = 0;  // Reset pbuf_size
 
         sprintf(temp, "%02d", logFile_counter);
         strcat(file_name, temp);
