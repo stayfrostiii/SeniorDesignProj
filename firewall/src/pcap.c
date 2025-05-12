@@ -46,14 +46,12 @@ typedef struct
 };ui_args;
 
 // Packet stuff
-Packet packet_buffer1[1000];
-Packet packet_buffer2[1000];
+Packet packet_buffer1[2500];
+Packet packet_buffer2[2500];
 
 int pbuf_size = 0;
 int pbuf_active = 0;
 int logFile_counter = 0;
-
-
 
 //reading ip from pipe
 void* pipe_thread(void* args) {
@@ -163,9 +161,9 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         payload_length = pkthdr->len - payload_offset;
         payload = (unsigned char *)(packet + payload_offset);
         
-        printf("Protocol: TCP\n");
-        printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
-        printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+        // printf("Protocol: TCP\n");
+        // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+        // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
 
 
     } 
@@ -255,7 +253,7 @@ void *pb_thread(void* args)
 
     while(1)
     {
-        if (pbuf_size >= 8000)
+        if (pbuf_size > 5000)
         {
             char file_name[32] = "./logs/packets";
             char temp[4];
@@ -274,7 +272,7 @@ void *pb_thread(void* args)
             fclose(file);
             pbuf_size = 0;
             logFile_counter++;
-            if (logFile_counter >= 4)
+            if (logFile_counter > 9)
             {
                 logFile_counter = 0;
             }

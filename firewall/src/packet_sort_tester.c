@@ -8,7 +8,7 @@ int main()
 {
     int protCount = 0;
     char* prot_filter = "protocol";
-    char* prot = "ICMP";
+    char* prot = "TCP";
 
     int dest_ipCount = 0;
     char* dest_ipFilter = "dst_ip";
