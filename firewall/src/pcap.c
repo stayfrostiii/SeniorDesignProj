@@ -29,6 +29,9 @@ pthread_mutex_t lock;
 pthread_cond_t cond;
 int pauseCap = 0;
 
+pthread_mutex_t pbuf_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t pbuf_cond = PTHREAD_COND_INITIALIZER;
+
 typedef struct {
     char src_ip[16];
     char dest_ip[16];
@@ -229,6 +232,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     // printf("-----------------------------\n");
 
 
+    pthread_mutex_lock(&pbuf_lock);
+
     /* Prevent overloading buffer array */
     if (pbuf_active == 0)
     {
@@ -238,13 +243,16 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     {
         packet_buffer2[pbuf_size] = packet_info;
     }
-
+    
     pbuf_size++;
+    
+    pthread_mutex_unlock(&pbuf_lock);  // Always unlock
     
     if (pbuf_size > 10000)
     {
-        pbuf_size = 0;
+        pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
     }
+
     printf("%d\n", counter);
     counter++;
 }
@@ -259,29 +267,43 @@ void *pb_thread(void* args)
 
     while(1)
     {
-        if (pbuf_size > 10000)
+        pthread_mutex_lock(&pbuf_lock);
+
+        // Wait until the condition is met (pbuf_size > 10000)
+        while (pbuf_size <= 10000)
         {
-            char file_name[32] = "./logs/packets";
-            char temp[4];
-
-            pbuf_active = ~pbuf_active;
-            for (int i = 0; i < pbuf_size; i++)
-            {
-                serialize_packet(&packet_buffer1[i], &pk);
-            }
-
-            sprintf(temp, "%02d", logFile_counter);
-            strcat(file_name, temp);
-            strcat(file_name, ".msgpack");
-            FILE *file = fopen(file_name, "wb");
-            fwrite(sbuf.data, 1, sbuf.size, file);
-            fclose(file);
-            logFile_counter++;
-            if (logFile_counter > 9)
-            {
-                logFile_counter = 0;
-            }
+            pthread_cond_wait(&pbuf_cond, &pbuf_lock);
         }
+
+        // At this point, pbuf_size > 10000
+        pbuf_size = 0;  // Reset pbuf_size
+
+        // Do the rest of the processing
+        char file_name[32] = "./logs/packets";
+        char temp[4];
+
+        pbuf_active = ~pbuf_active;
+        for (int i = 0; i < pbuf_size; i++)
+        {
+            serialize_packet(&packet_buffer1[i], &pk);
+        }
+
+        sprintf(temp, "%02d", logFile_counter);
+        strcat(file_name, temp);
+        strcat(file_name, ".msgpack");
+
+        FILE *file = fopen(file_name, "wb");
+        fwrite(sbuf.data, 1, sbuf.size, file);
+        fclose(file);
+
+        logFile_counter++;
+        if (logFile_counter > 9)
+        {
+            logFile_counter = 0;
+        }
+
+        // Unlock the mutex
+        pthread_mutex_unlock(&pbuf_lock);
     }
     msgpack_sbuffer_destroy(&sbuf);
 }
