@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <msgpack.h>
 
 #include "packet_sort.h"
 
-void filter_packets(char* filename, char* filter, char* value, int* packet_num)
+void filter_packets(char* filename, char* filter, char* value, uint64_t* packet_num)
 {
     FILE *file = fopen(filename, "rb");
     if (!file) 

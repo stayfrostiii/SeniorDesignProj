@@ -1,12 +1,14 @@
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include "./libs/packet_sort.h"
 
 // gcc packet_sort_tester.c libs/packet_sort.c -o exe -lmsgpackc
 
 int main()
 {
-    int protCount = 0;
+    uint64_t protCount = 0;
     char* prot_filter = "protocol";
     char* prot = "TCP";
 
@@ -28,7 +30,7 @@ int main()
     filter_packets("./logs/packets07.msgpack", prot_filter, prot, &protCount);
     filter_packets("./logs/packets08.msgpack", prot_filter, prot, &protCount);
     filter_packets("./logs/packets09.msgpack", prot_filter, prot, &protCount);
-    printf("\nNumber of %s Protocols: %d\n", prot, protCount);
+    printf("\nNumber of %s Protocols: %llu\n", prot, protCount);
 
     filter_packets("./logs/packets00.msgpack", dest_ipFilter, dest_ip, &dest_ipCount);
     filter_packets("./logs/packets01.msgpack", dest_ipFilter, dest_ip, &dest_ipCount);
