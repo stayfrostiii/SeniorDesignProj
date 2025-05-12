@@ -12,11 +12,11 @@ int main()
     char* prot_filter = "protocol";
     char* prot = "TCP";
 
-    int dest_ipCount = 0;
+    uint64_t dest_ipCount = 0;
     char* dest_ipFilter = "dst_ip";
     char* dest_ip = "0.0.0.0";
 
-    int src_ipCount = 0;
+    uint64_t src_ipCount = 0;
     char* src_ipFilter = "src_ip";
     char* src_ip = "0.0.0.0";
 
@@ -42,7 +42,7 @@ int main()
     filter_packets("./logs/packets07.msgpack", dest_ipFilter, dest_ip, &dest_ipCount);
     filter_packets("./logs/packets08.msgpack", dest_ipFilter, dest_ip, &dest_ipCount);
     filter_packets("./logs/packets09.msgpack", dest_ipFilter, dest_ip, &dest_ipCount);
-    printf("\nNumber of %s Destination IPs: %d\n", dest_ip, dest_ipCount);
+    printf("\nNumber of %s Destination IPs: %llu\n", dest_ip, dest_ipCount);
 
     filter_packets("./logs/packets00.msgpack", src_ipFilter, src_ip, &src_ipCount);
     filter_packets("./logs/packets01.msgpack", src_ipFilter, src_ip, &src_ipCount);
@@ -54,7 +54,7 @@ int main()
     filter_packets("./logs/packets07.msgpack", src_ipFilter, src_ip, &src_ipCount);
     filter_packets("./logs/packets08.msgpack", src_ipFilter, src_ip, &src_ipCount);
     filter_packets("./logs/packets09.msgpack", src_ipFilter, src_ip, &src_ipCount);
-    printf("\nNumber of %s Source IPs: %d\n", src_ip, src_ipCount);
+    printf("\nNumber of %s Source IPs: %llu\n", src_ip, src_ipCount);
 
     return 0;
 }
