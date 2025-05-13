@@ -39,11 +39,11 @@ typedef struct {
     pcap_t* handle;
 } pc_args;
 
-typedef struct 
-{
+// typedef struct 
+// {
 
 
-};ui_args;
+// };ui_args;
 
 // Packet stuff
 Packet packet_buffer1[2500];

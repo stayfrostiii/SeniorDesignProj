@@ -16,7 +16,7 @@ export default function Configurations() {
         const response = await fetch("http://127.0.0.1:8080/get-blacklist");
         if (response.ok) {
           const data = await response.json();
-          setBlacklist(data);
+          setBlacklist(data.blacklist); // Extract the "blacklist" key
         } else {
           console.error("Failed to fetch blacklist.");
         }
@@ -57,7 +57,7 @@ export default function Configurations() {
         setIp(""); // Clear the input field
         // Refresh the blacklist
         const updatedBlacklist = await response.json();
-        setBlacklist(updatedBlacklist);
+        setBlacklist(updatedBlacklist.blacklist); // Update the blacklist state
       } else {
         alert("Failed to add IP to blacklist.");
       }
