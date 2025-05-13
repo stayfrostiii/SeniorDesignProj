@@ -1,6 +1,6 @@
 export default function Analyze() {
   return (
-    <div className="grid-2x2 page-container">
+    <div className="page-container page-container-2x2">
       <div className="grid-item">
         <h2>Dropped Packets</h2>
         <p>Information about dropped packets.</p>
