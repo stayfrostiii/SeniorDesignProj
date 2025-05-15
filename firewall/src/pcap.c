@@ -66,9 +66,9 @@ int logFile_counter = 0;
 #define SHM_NAME "/my_shm"
 #define SHM_SIZE 1024
 
-void serialize_packet(Packet *p, msgpack_packer *pk)
+void serialize_packet(Packet *p, msgpack_packer *pk, msgpack_sbuffer *sbuf)
 {
-    msgpack_sbuffer_clear(&sbuf)
+    msgpack_sbuffer_clear(&sbuf);
 
     msgpack_pack_map(pk, 3);  // 3 key-value pairs (src_ip, dst_ip, protocol)
     
@@ -311,7 +311,7 @@ void *pb_thread(void* args)
         pbuf_active = !pbuf_active;
         for (int i = 0; i < pbuf_size; i++)
         {
-            serialize_packet(&packet_buffer1[i], &pk);
+            serialize_packet(&packet_buffer1[i], &pk, &sbuf);
         }
 
         pbuf_size = 0;  // Reset pbuf_size
