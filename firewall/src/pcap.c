@@ -136,7 +136,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 {
     Packet packet_info;
     smData *data = (smData*)user_data;
-    printf("%d\n", data->status);
+    // printf("%d\n", data->status);
 
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
     
@@ -280,7 +280,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
     }
 
-    printf("%d\n", counter);
+    if (counter % 1000 == 0)
+        printf("%d\n", counter);
     counter++;
 }
 
