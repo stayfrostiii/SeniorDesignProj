@@ -14,11 +14,11 @@ int main()
 
     uint64_t dest_ipCount = 0;
     char* dest_ipFilter = "dst_ip";
-    char* dest_ip = "0.0.0.0";
+    char* dest_ip = "10.0.0.224";
 
     uint64_t src_ipCount = 0;
     char* src_ipFilter = "src_ip";
-    char* src_ip = "0.0.0.0";
+    char* src_ip = "10.0.0.224";
 
     filter_packets("./logs/packets00.msgpack", prot_filter, prot, &protCount);
     filter_packets("./logs/packets01.msgpack", prot_filter, prot, &protCount);
