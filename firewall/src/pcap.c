@@ -125,8 +125,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         // printf("Protocol: TCP\n");
         // printf("Source IP: %s\n", src_ip);
         // printf("Destination IP: %s\n", dest_ip); 
-        // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
-        // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+        printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+        printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
 
         packet_info.src_port = ntohs(tcp_header->th_sport);
         packet_info.dest_port = ntohs(tcp_header->th_dport);
@@ -145,9 +145,10 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 
         /*
         printf("Protocol: UDP\n");
+        */
         printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
         printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
-        */
+        
 
         packet_info.src_port = ntohs(udp_header->uh_sport);
         packet_info.dest_port = ntohs(udp_header->uh_dport);
