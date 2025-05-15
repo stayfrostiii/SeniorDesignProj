@@ -32,10 +32,14 @@ async def handler(websocket, path):
                     break
                 # time.sleep(0.000001)  # Avoid CPU spinning (1 us delay)
 
+            print("here1")
+
             # Read entire smData struct
             mapfile.seek(0)
             data = mapfile.read(smdata_size)
             status, src_ip, dest_ip, prot, src_port, dest_port, time = struct.unpack(smdata_fmt, data)
+
+            print("here12")
 
             # Decode byte strings
             src_ip = src_ip.decode('utf-8', errors='replace').rstrip('\x00')
@@ -43,6 +47,8 @@ async def handler(websocket, path):
             prot = prot.decode('utf-8', errors='replace').rstrip('\x00')
             time = time.decode('utf-8', errors='replace').rstrip('\x00')
             
+            print("here13")
+
             data = {
                 "time": time,
                 "src_ip": src_ip,
@@ -51,6 +57,8 @@ async def handler(websocket, path):
                 "src_port": src_port,
                 "dest_port": dest_port
             }
+            
+            print("here14")
 
             # Display received packet info
             print(f"[RECEIVED] Status={status} | Src={src_ip} | Dest={dest_ip} | Protocol={prot} | src_port={src_port} | dest_port={dest_port} | time={time}")
