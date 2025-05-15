@@ -76,12 +76,15 @@ async def handler(websocket, path):
         mapfile.close()
 
 async def main():
-    async with websockets.serve(handler, "10.0.0.100", 8081):
-        print("WebSocket server started on ws://10.0.0.100:8081")
+    async with websockets.serve(handler, "0.0.0.0", 8081):
+        print("WebSocket server started on ws://0.0.0.0:8081")
         await asyncio.Future()  # Run forever
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        print(f"Server failed to start: {e}")
 
 # try:
 #     while True:
