@@ -160,12 +160,20 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             // printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
             // printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
             
-
             packet_info.src_port = ntohs(udp_header->uh_sport);
             packet_info.dest_port = ntohs(udp_header->uh_dport);
 
-            strncpy(packet_info.prot, "UDP", sizeof(packet_info.prot));
-            packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+            if (packet_info.src_port == 5353 && packet_info.dest_port == 5353)
+            {
+                strncpy(packet_info.prot, "mDNS", sizeof(packet_info.prot));
+                packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+            }   
+
+            else
+            {
+                strncpy(packet_info.prot, "UDP", sizeof(packet_info.prot));
+                packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+            }
         } 
         
         else if (ip_header->ip_p == IPPROTO_ICMP) 
