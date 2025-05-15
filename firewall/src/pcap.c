@@ -265,8 +265,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         usleep(100);
     }
 
-    ptr->packet_info = packet_info;
-    ptr->status = 1;
+    data->packet_info = packet_info;
+    data->status = 1;
     
     pbuf_size++;
     
