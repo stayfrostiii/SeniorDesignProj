@@ -33,9 +33,9 @@ try:
         status, src_ip, dest_ip, prot = struct.unpack(smdata_fmt, data)
 
         # Decode byte strings
-        src_ip = src_ip.decode('utf-8').rstrip('\x00')
-        dest_ip = dest_ip.decode('utf-8').rstrip('\x00')
-        prot = prot.decode('utf-8').rstrip('\x00')
+        src_ip = src_ip.decode('utf-8', errors='replace').rstrip('\x00')
+        dest_ip = dest_ip.decode('utf-8', errors='replace').rstrip('\x00')
+        prot = prot.decode('utf-8', errors='replace').rstrip('\x00')
 
         # Display received packet info
         print(f"[RECEIVED] Status={status} | Src={src_ip} | Dest={dest_ip} | Protocol={prot}")
