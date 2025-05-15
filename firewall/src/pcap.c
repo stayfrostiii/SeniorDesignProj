@@ -14,7 +14,7 @@
 #include <msgpack.h>
 // #include <ndpi/ndpi_api.h>
 #include <fcntl.h>  // For open()
-#include <unistd.h> // For read()
+#include <sys/mman.h>
 
 // gcc src/pcap.c -o build/pcap -lpcap -lmsgpackc -lpthread -lnftables 
 
@@ -37,15 +37,15 @@ typedef struct {
     char prot[10];
 } Packet;
 
+typedef struct 
+{
+    volatile int status;
+    Packet packet_info;
+} smData;
+
 typedef struct {
     pcap_t* handle;
 } pc_args;
-
-typedef struct 
-{
-
-
-}ui_args;
 
 // Packet stuff
 Packet packet_buffer1[20000];
@@ -54,6 +54,9 @@ Packet packet_buffer2[20000];
 int pbuf_size = 0;
 int pbuf_active = 0;
 int logFile_counter = 0;
+
+#define SHM_NAME "/my_shm"
+#define SHM_SIZE 1024
 
 //reading ip from pipe
 void* pipe_thread(void* args) {
@@ -131,8 +134,9 @@ void serialize_packet(Packet *p, msgpack_packer *pk)
 
 void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) 
 {
-    
     Packet packet_info;
+    smData *data = (smData*)user_data;
+    printf("%d\n", data->status);
 
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
     
@@ -255,6 +259,14 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     {
         packet_buffer2[pbuf_size] = packet_info;
     }
+
+    while (data->status != 0 && data->status != 2)
+    {
+        usleep(100);
+    }
+
+    ptr->packet_info = packet_info;
+    ptr->status = 1;
     
     pbuf_size++;
     
@@ -324,6 +336,26 @@ void *pb_thread(void* args)
 void* pc_thread(void* args)
 {
     pc_args* args_f = (pc_args*)args;
+    int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("shm_open");
+        exit(1);
+    }
+
+    // Configure size
+    if (ftruncate(shm_fd, SHM_SIZE) == -1) {
+        perror("ftruncate");
+        exit(1);
+    }
+
+    // Map memory
+    smData *ptr = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (ptr == MAP_FAILED) {
+        perror("mmap");
+        exit(1);
+    }
+
+    ptr->status = 0;
 
     while(1)
     {
@@ -342,13 +374,18 @@ void* pc_thread(void* args)
         pthread_mutex_unlock(&lock);
 
         // Capture packets here
-        if (pcap_loop(args_f->handle, 1, packet_handler, NULL) < 0) 
+        if (pcap_loop(args_f->handle, 1, packet_handler, (u_char *)&ptr) < 0) 
         {
             printf("Error capturing packets: %s\n", pcap_geterr(args_f->handle));
             pcap_close(args_f->handle);
             exit(1);
         }
     }
+
+    // Cleanup
+    munmap(ptr, SHM_SIZE);
+    close(shm_fd);
+    shm_unlink(SHM_NAME);
 }
 
 void* ui_thread(void* args)
