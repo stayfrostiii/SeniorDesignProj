@@ -13,7 +13,7 @@ export default function PacketWindow() {
       // Add the new packet to the top of the list
       setPackets((prevPackets) => {
         const updatedPackets = [packet, ...prevPackets]; // Add new packet at the top
-        if (updatedPackets.length > 50) {
+        if (updatedPackets.length > 21) {
           updatedPackets.pop(); // Remove the last packet if the list exceeds 50
         }
         return updatedPackets;
