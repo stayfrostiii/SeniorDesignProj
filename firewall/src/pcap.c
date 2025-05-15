@@ -25,6 +25,7 @@
 
 // Packet capture stuff
 int counter = 0;
+int mDNSFilter = 0;
 
 // Multithread stuff
 pthread_mutex_t lock;
@@ -128,7 +129,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         packet_info.src_ip[INET_ADDRSTRLEN - 1] = '\0';
         packet_info.dest_ip[INET_ADDRSTRLEN - 1] = '\0';
 
-        // Check the protocol type (TCP or UDP)
+        // Check the protocol type 
         if (ip_header->ip_p == IPPROTO_TCP) 
         {
             tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
@@ -239,26 +240,34 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     */
         pthread_mutex_lock(&pbuf_lock);
 
-        /* Prevent overloading buffer array */
-        if (pbuf_active == 0)
+        if (mDNSFilter == 0)
         {
-            packet_buffer1[pbuf_size] = packet_info;
+            /* Prevent overloading buffer array */
+            if (pbuf_active == 0)
+            {
+                packet_buffer1[pbuf_size] = packet_info;
+            }
+            else
+            {
+                packet_buffer2[pbuf_size] = packet_info;
+            }
+
+            while (data->status != 0 && data->status != 2)
+            {
+                // Wait for status = 1 to write
+            }
+
+            data->packet_info = packet_info;
+            data->status = 1;
+            
+            pbuf_size++;
         }
+        
+        if (strcmp(packet_info.prot, "mDNS") == 0)
+            mDNSFilter = 1;
         else
-        {
-            packet_buffer2[pbuf_size] = packet_info;
-        }
+            mDNSFilter = 0;
 
-        while (data->status != 0 && data->status != 2)
-        {
-            // Wait for status = 1 to write
-        }
-
-        data->packet_info = packet_info;
-        data->status = 1;
-        
-        pbuf_size++;
-        
         pthread_mutex_unlock(&pbuf_lock);  // Always unlock
         
         if (pbuf_size > 10000)
