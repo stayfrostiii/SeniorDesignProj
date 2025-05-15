@@ -14,7 +14,7 @@ smdata_size = struct.calcsize(smdata_fmt)
 
 print("Python listener started, waiting for packets...\n")
 
-async def handler(websocket, path):
+async def handler(websocket):
     try:
 
         shm = posix_ipc.SharedMemory(SHM_NAME)
