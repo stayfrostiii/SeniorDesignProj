@@ -131,8 +131,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         // printf("Protocol: TCP\n");
         // printf("Source IP: %s\n", src_ip);
         // printf("Destination IP: %s\n", dest_ip); 
-        printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
-        printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+        // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+        // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
 
         packet_info.src_port = ntohs(tcp_header->th_sport);
         packet_info.dest_port = ntohs(tcp_header->th_dport);
@@ -152,8 +152,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         /*
         printf("Protocol: UDP\n");
         */
-        printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
-        printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
+        // printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
+        // printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
         
 
         packet_info.src_port = ntohs(udp_header->uh_sport);
@@ -253,9 +253,9 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
     }
 
-    printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
-        packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
-        packet_info.src_port, packet_info.dest_port, packet_info.time);
+    // printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
+    //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
+    //     packet_info.src_port, packet_info.dest_port, packet_info.time);
 
     if (counter % 1000 == 0)
         printf("%d\n", counter);
