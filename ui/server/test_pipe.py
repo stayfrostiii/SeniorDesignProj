@@ -9,7 +9,7 @@ SHM_NAME = "/my_shm"
 SHM_SIZE = 1024
 
 # Define struct format
-smdata_fmt = 'i16s16s10sii26s6x'
+smdata_fmt = 'i16s16s10sii26s'
 smdata_size = struct.calcsize(smdata_fmt)
 
 print(smdata_size)
