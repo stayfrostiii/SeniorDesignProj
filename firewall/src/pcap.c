@@ -179,7 +179,6 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 
     else 
     {
-        other_header = (struct icmphdr *)(packet + 14 + (ip_header->ip_hl << 2));
         // printf("Protocol: Other\n");
 
         // printf("Protocol: Other\n");
