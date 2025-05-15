@@ -83,6 +83,12 @@ void serialize_packet(Packet *p, msgpack_packer *pk)
     msgpack_pack_str_body(pk, "protocol", strlen("protocol"));
     msgpack_pack_str(pk, strlen(p->prot));
     msgpack_pack_str_body(pk, p->prot, strlen(p->prot));
+
+    // protocol
+    msgpack_pack_str(pk, strlen("time"));
+    msgpack_pack_str_body(pk, "time", strlen("time"));
+    msgpack_pack_str(pk, strlen(p->time));
+    msgpack_pack_str_body(pk, p->time, strlen(p->time));
 }
 
 void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) 
@@ -164,8 +170,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         // printf("Source IP: %s\n", src_ip);
         // printf("Destination IP: %s\n", dest_ip); 
 
-        packet_info.src_port = ntohs(icmp_header->ih_sport);
-        packet_info.dest_port = ntohs(icmp_header->ih_dport);
+        packet_info.src_port = 0;
+        packet_info.dest_port = 0;
 
         strncpy(packet_info.prot, "ICMP", sizeof(packet_info.prot));
         packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
@@ -247,6 +253,10 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     {
         pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
     }
+
+    printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
+        packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
+        packet_info.src_port, packet_info.dest_port, packet_info.time);
 
     if (counter % 1000 == 0)
         printf("%d\n", counter);
