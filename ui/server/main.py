@@ -16,7 +16,7 @@ def get_blacklist():
     """Fetch the current blacklist from nftables."""
     try:
         # Run the Linux command to list the nftables rules
-        command = "sudo nft -a list chain inet combined_table input_chain"
+        command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to extract blacklisted IPs
@@ -128,7 +128,7 @@ def get_rules():
     """Fetch the current rules from nftables."""
     try:
         # Run the Linux command to list the nftables rules
-        command = "sudo nft -a list chain inet combined_table input_chain"  # Use -a to include rule handles
+        command = "sudo nft -a list chain bridge filter forward"  # Use -a to include rule handles
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to extract rules and their handles
