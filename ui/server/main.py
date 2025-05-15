@@ -173,14 +173,14 @@ def add_rule():
 
     try:
         # Add the rule to nftables
-        command = f"sudo nft add rule inet combined_table input_chain ip saddr {source_ip}"
+        command = f"sudo nft add rule bridge filter forward ip saddr {source_ip}"
         if destination_port != "any":
             command += f" tcp dport {destination_port}"
         command += f" {data['action']}"  # Add the terminal action (e.g., drop, accept)
         subprocess.run(command, shell=True, check=True)
 
         # Retrieve the handle of the newly added rule
-        list_command = "sudo nft -a list chain inet combined_table input_chain"
+        list_command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(list_command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to find the handle of the newly added rule
@@ -219,7 +219,7 @@ def update_rule(rule_id):
 def delete_rule(rule_id):
     try:
         # List the rules in the chain with handles
-        command = "sudo nft -a list chain inet combined_table input_chain"
+        command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to find the rule handle that matches the rule_id
@@ -234,7 +234,7 @@ def delete_rule(rule_id):
             return jsonify({"error": "Rule not found in nftables"}), 404
 
         # Delete the rule using the handle
-        delete_command = f"sudo nft delete rule inet combined_table input_chain handle {rule_handle}"
+        delete_command = f"sudo nft delete rule bridge filter forward handle {rule_handle}"
         subprocess.run(delete_command, shell=True, check=True)
 
         app.logger.info(f"Rule with handle {rule_handle} deleted from nftables.")
