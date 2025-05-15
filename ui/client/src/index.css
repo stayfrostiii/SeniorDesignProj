@@ -81,6 +81,14 @@ header .nav-item:hover {
   grid-template-columns: 2fr 1fr;
 }
 
+/* Custom 2-column layout with 1/3 and 2/3 split */
+.custom-2col-split {
+  display: grid;
+  grid-template-columns: 1fr 2fr; /* 33% and 66% split */
+  gap: 20px;
+  padding: 20px;
+}
+
 /* Grid item styles */
 .grid-item {
   background-color: #1e1e1e; /* Dark box background */

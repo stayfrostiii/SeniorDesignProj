@@ -2,12 +2,14 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import ipaddress
 import subprocess
+from uuid import uuid4
 
 app = Flask(__name__)
 cors = CORS(app, origins='*')
 
-# In-memory storage for the blacklist
+# In-memory storage for the blacklist and rules
 blacklist = set()  # Use a set for faster lookups and to avoid duplicates
+rules = []
 
 @app.route("/get-blacklist", methods=["GET"])
 def get_blacklist():
@@ -114,6 +116,41 @@ def remove_from_blacklist():
     except Exception as e:
         app.logger.error(f"Unexpected error: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route("/rules", methods=["GET"])
+def get_rules():
+    return jsonify(rules)
+
+@app.route("/rules", methods=["POST"])
+def add_rule():
+    data = request.json
+    data["id"] = str(uuid4())
+    rules.append(data)
+    return jsonify(data), 201
+
+@app.route("/rules/<rule_id>", methods=["PUT"])
+def update_rule(rule_id):
+    for rule in rules:
+        if rule["id"] == rule_id:
+            rule.update(request.json)
+            return jsonify(rule)
+    return jsonify({"error": "Rule not found"}), 404
+
+@app.route("/rules/<rule_id>", methods=["DELETE"])
+def delete_rule(rule_id):
+    global rules
+    rules = [r for r in rules if r["id"] != rule_id]
+    return "", 204
+
+@app.route("/simulate", methods=["POST"])
+def simulate_packet():
+    packet = request.json
+    # Naive simulation: just match source/destination IP/port
+    for rule in rules:
+        if (rule.get("source_ip", "any") == packet.get("source_ip", "any") or rule.get("source_ip", "any") == "any") and \
+           (rule.get("destination_ip", "any") == packet.get("destination_ip", "any") or rule.get("destination_ip", "any") == "any"):
+            return jsonify({"action": rule.get("action", "allow"), "matched_rule": rule})
+    return jsonify({"action": "allow", "matched_rule": None})
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
