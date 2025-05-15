@@ -68,7 +68,7 @@ int logFile_counter = 0;
 
 void serialize_packet(Packet *p, msgpack_packer *pk, msgpack_sbuffer *sbuf)
 {
-    msgpack_sbuffer_clear(&sbuf);
+    msgpack_sbuffer_clear(sbuf);
 
     msgpack_pack_map(pk, 3);  // 3 key-value pairs (src_ip, dst_ip, protocol)
     
