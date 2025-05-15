@@ -242,6 +242,9 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     */
         pthread_mutex_lock(&pbuf_lock);
 
+        printf("[RECEIVED] Src=%s | Dest=%s | Protocol=%s | src_port=%d | dest_port=%d | time=%s\n", 
+            packet_info.src_ip, packet_info.dest_ip, packet_info.prot, packet_info.src_port, packet_info.dest_port, packet_info.time,);
+
         /* Prevent overloading buffer array */
         if (pbuf_active == 0)
         {
