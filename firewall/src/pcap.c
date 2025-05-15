@@ -176,7 +176,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
         // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
 
-        strcpy(packet_info.prot, "TCP");
+        strncpy(packet_info.prot, "TCP", sizeof(packet_info.prot));
+        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
     } 
     
     else if (ip_header->ip_p == IPPROTO_UDP) 
@@ -197,7 +198,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
         */
 
-        strcpy(packet_info.prot, "UDP");
+        strncpy(packet_info.prot, "UDP", sizeof(packet_info.prot));
+        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
     } 
     
     else if (ip_header->ip_p == IPPROTO_ICMP) 
@@ -206,7 +208,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         // printf("Source IP: %s\n", src_ip);
         // printf("Destination IP: %s\n", dest_ip); 
 
-        strcpy(packet_info.prot, "ICMP");
+        strncpy(packet_info.prot, "ICMP", sizeof(packet_info.prot));
+        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
 
     } else {
         payload = NULL;
@@ -217,7 +220,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         // printf("Source IP: %s\n", src_ip);
         // printf("Destination IP: %s\n", dest_ip); 
 
-        strcpy(packet_info.prot, "Other");
+        strncpy(packet_info.prot, "Other", sizeof(packet_info.prot));
+        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
     }
     // if (payload && payload_length > 0) 
     // {
