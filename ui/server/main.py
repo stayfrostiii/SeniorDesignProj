@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response, stream_with_context
 from flask_cors import CORS
 import ipaddress
 import subprocess
+import json
 from uuid import uuid4
 
 app = Flask(__name__)
@@ -246,15 +247,63 @@ def delete_rule(rule_id):
         app.logger.error(f"Unexpected error: {e}")
         return jsonify({"error": str(e)}), 500
 
-@app.route("/simulate", methods=["POST"])
-def simulate_packet():
-    packet = request.json
-    # Naive simulation: just match source/destination IP/port
-    for rule in rules:
-        if (rule.get("source_ip", "any") == packet.get("source_ip", "any") or rule.get("source_ip", "any") == "any") and \
-           (rule.get("destination_ip", "any") == packet.get("destination_ip", "any") or rule.get("destination_ip", "any") == "any"):
-            return jsonify({"action": rule.get("action", "allow"), "matched_rule": rule})
-    return jsonify({"action": "allow", "matched_rule": None})
+@app.route('/packet-stream', methods=['GET'])
+def packet_stream():
+    """Stream packet data from the C program."""
+    def generate_packets():
+        # Spawn the C program as a subprocess
+        process = subprocess.Popen(
+            ['/home/daniel/senior/SeniorDesignProj/firewall/build/pcap'],  # Full path to the binary
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        # Read stdout line by line
+        for line in iter(process.stdout.readline, ''):
+            line = line.strip()
+            if line:
+                try:
+                    # Ignore lines that contain error messages or invalid data
+                    if "Error" in line or "enp0s3" in line or "Operation not permitted" in line:
+                        app.logger.warning(f"Ignoring non-packet data: {line}")
+                        continue
+
+                    # Split the line into fields
+                    fields = line.split(maxsplit=5)  # Split into exactly 6 fields
+                    
+                    # Ensure the line has exactly 6 fields
+                    if len(fields) != 6:
+                        app.logger.error(f"Malformed packet data: {line}")
+                        continue
+                    
+                    # Parse the line into JSON format
+                    packet_data = {
+                        "timestamp": fields[0] + " " + fields[1],  # Combine date and time
+                        "source_ip": fields[2],
+                        "dest_ip": fields[3],
+                        "protocol": fields[4],
+                        "source_port": fields[5].split()[0],  # Ensure no extra spaces
+                        "dest_port": fields[5].split()[1],
+                    }
+
+                    # Filter out packets with invalid IPs or protocols
+                    if packet_data["source_ip"] == "0.0.0.0" or packet_data["dest_ip"] == "0.0.0.0":
+                        app.logger.warning(f"Ignoring packet with invalid IPs: {line}")
+                        continue
+                    if packet_data["protocol"] == "Other":
+                        app.logger.warning(f"Ignoring packet with unsupported protocol: {line}")
+                        continue
+
+                    # Yield the data as an SSE event
+                    yield f"data: {json.dumps(packet_data)}\n\n"
+                except Exception as e:
+                    app.logger.error(f"Error parsing packet data: {e}")
+        process.stdout.close()
+        process.wait()
+
+    return Response(stream_with_context(generate_packets()), content_type='text/event-stream')
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
