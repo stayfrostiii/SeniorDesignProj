@@ -89,18 +89,20 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     // printf("%d\n", data->status);
 
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
-    
     struct tcphdr *tcp_header;
     struct udphdr *udp_header;
+
     unsigned char *payload;
     int payload_offset;
     int payload_length;
     // printf("Packet captured: Length = %d bytes\n", pkthdr->len);
 
-    // Extract IP header information
-    char src_ip[INET_ADDRSTRLEN], dest_ip[INET_ADDRSTRLEN];
 
-    /* Convert IP in binary form to readable string */
+    char src_ip[INET_ADDRSTRLEN], dest_ip[INET_ADDRSTRLEN];
+    char protocol[10] = "Other"; // Default protocol
+    int src_port = 0, dest_port = 0;
+
+    // Extract IP header information
     inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
 
@@ -238,6 +240,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     if (counter % 1000 == 0)
         printf("%d\n", counter);
     counter++;
+
 }
 
 void *pb_thread(void* args)
@@ -440,4 +443,4 @@ int main()
 
     pcap_close(handle);
     return 0;
-} 
+}
