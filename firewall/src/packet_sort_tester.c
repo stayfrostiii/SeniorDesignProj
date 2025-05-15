@@ -10,7 +10,7 @@ int main()
 {
     uint64_t protCount = 0;
     char* prot_filter = "protocol";
-    char* prot = "UDP";
+    char* prot = "TCP";
 
     uint64_t dest_ipCount = 0;
     char* dest_ipFilter = "dst_ip";
