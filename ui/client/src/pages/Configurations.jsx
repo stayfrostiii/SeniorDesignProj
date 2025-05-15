@@ -134,7 +134,8 @@ export default function Configurations() {
         alert("Failed to add IP to blacklist.");
       }
     } catch (error) {
-      alert("An error occurred. Please try again.");
+      console.error("Eody", body);
+      alert("An error occurred. Fuck you Please try again.");
     }
   };
 
