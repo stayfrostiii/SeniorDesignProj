@@ -121,7 +121,7 @@ export default function Configurations() {
       return;
     }
     try {
-      const response = await fetch("http://127.0.0.1:8080/add-to-blacklist", {
+      const response = await fetch("http://10.0.0.100:8080/add-to-blacklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ip }),
@@ -140,7 +140,7 @@ export default function Configurations() {
 
   const handleRemoveFromBlacklist = async (ipToRemove) => {
     try {
-      const response = await fetch("http://127.0.0.1:8080/remove-from-blacklist", {
+      const response = await fetch("http://10.0.0.100:8080/remove-from-blacklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ip: ipToRemove }),
