@@ -64,7 +64,7 @@ export default function Configurations() {
   const fetchRules = async () => {
     try {
       const res = await axios.get("http://127.0.0.1:8080/rules");
-      setRules(res.data);
+      setRules(res.data); // Update the rules state with the data from the backend
     } catch (error) {
       console.error("Error fetching rules:", error);
     }
@@ -147,11 +147,13 @@ export default function Configurations() {
       });
       if (response.ok) {
         const updatedBlacklist = await response.json();
-        setBlacklist(updatedBlacklist);
+        setBlacklist(updatedBlacklist.blacklist); // Ensure the state is updated with the new blacklist
       } else {
-        alert("Failed to remove IP from blacklist.");
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to remove IP from blacklist.");
       }
     } catch (error) {
+      console.error("Error removing IP from blacklist:", error);
       alert("An error occurred. Please try again.");
     }
   };
@@ -334,14 +336,10 @@ export default function Configurations() {
           onClick={() => {
             setForm({
               action: "allow",
-              direction: "inbound",
-              protocol: "TCP",
               source_ip: "",
               source_port: "",
               destination_ip: "",
               destination_port: "",
-              interface: "",
-              description: "",
               log: false,
               rate_limit: "",
             });
@@ -357,15 +355,10 @@ export default function Configurations() {
             <tr>
               <th>#</th>
               <th>Action</th>
-              <th>Direction</th>
-              <th>Protocol</th>
               <th>Source IP</th>
               <th>Source Port</th>
               <th>Destination IP</th>
               <th>Destination Port</th>
-              <th>Interface</th>
-              <th>Description</th>
-              <th>Tags</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -374,18 +367,10 @@ export default function Configurations() {
               <tr key={rule.id}>
                 <td>{idx + 1}</td>
                 <td className={actionColor(rule.action)}>{rule.action}</td>
-                <td>{rule.direction}</td>
-                <td>{rule.protocol}</td>
                 <td>{rule.source_ip}</td>
                 <td>{rule.source_port}</td>
                 <td>{rule.destination_ip}</td>
                 <td>{rule.destination_port}</td>
-                <td>{rule.interface}</td>
-                <td>{rule.description}</td>
-                <td>
-                  {rule.log && ICONS.log}
-                  {rule.rate_limit && ICONS.rate}
-                </td>
                 <td>
                   <button
                     onClick={() => {
