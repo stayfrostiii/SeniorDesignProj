@@ -52,8 +52,6 @@ async def handler(websocket, path):
                 "dest_port": dest_port
             }
 
-            await websocket.send(json.dumps(data))
-
             # Display received packet info
             print(f"[RECEIVED] Status={status} | Src={src_ip} | Dest={dest_ip} | Protocol={prot} | src_port={src_port} | dest_port={dest_port} | time={time}")
 
@@ -61,6 +59,8 @@ async def handler(websocket, path):
             mapfile.seek(0)
             mapfile.write(struct.pack('i', 0))
             mapfile.flush()
+
+            await websocket.send(json.dumps(data))
 
     except KeyboardInterrupt:
         print("\nExiting gracefully.")
