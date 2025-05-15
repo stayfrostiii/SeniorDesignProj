@@ -12,6 +12,8 @@ SHM_SIZE = 1024
 smdata_fmt = 'i16s16s10sii26s6x'
 smdata_size = struct.calcsize(smdata_fmt)
 
+print(smdata_size)
+
 # Open and map shared memory
 shm = posix_ipc.SharedMemory(SHM_NAME)
 mapfile = mmap.mmap(shm.fd, SHM_SIZE)
