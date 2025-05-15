@@ -38,22 +38,22 @@ void filter_packets(char* filename, char* filter, char* value, uint64_t* packet_
                     msgpack_object val = kv.val;
 
                     if (key.type == MSGPACK_OBJECT_STR && val.type == MSGPACK_OBJECT_STR) {
-                        // if (
-                        //     (
-                        //         key.via.str.size == strlen(filter) && 
-                        //         strncmp(key.via.str.ptr, filter, key.via.str.size) == 0
-                        //     ) && 
-                        //     (
-                        //         val.via.str.size == strlen(value) && 
-                        //         strncmp(val.via.str.ptr, value, val.via.str.size) == 0
-                        //     )
-                        // )
-                        // {
+                        if (
+                            (
+                                key.via.str.size == strlen(filter) && 
+                                strncmp(key.via.str.ptr, filter, key.via.str.size) == 0
+                            ) && 
+                            (
+                                val.via.str.size == strlen(value) && 
+                                strncmp(val.via.str.ptr, value, val.via.str.size) == 0
+                            )
+                        )
+                        {
                             (*packet_num)++;
-                        //     printf("  %.*s: %.*s\n",
-                        //         key.via.str.size, key.via.str.ptr,
-                        //         val.via.str.size, val.via.str.ptr);
-                        // }
+                            printf("  %.*s: %.*s\n",
+                                key.via.str.size, key.via.str.ptr,
+                                val.via.str.size, val.via.str.ptr);
+                        }
                     }
                 }
                 // printf("\n");

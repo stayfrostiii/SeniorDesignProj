@@ -164,8 +164,10 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         payload = (unsigned char *)(packet + payload_offset);
         
         printf("Protocol: TCP\n");
-        printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
-        printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+        printf("Source IP: %d\n", src_ip);
+        printf("Destination IP: %d\n", dest_ip); 
+        // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+        // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
 
 
     } 
@@ -177,6 +179,11 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         payload_offset = 14 + (ip_header->ip_hl << 2) + sizeof(struct udphdr); // Ethernet + IP + UDP
         payload_length = pkthdr->len - payload_offset;
         payload = (unsigned char *)(packet + payload_offset);
+
+        printf("Protocol: UDP\n");
+        printf("Source IP: %d\n", src_ip);
+        printf("Destination IP: %d\n", dest_ip); 
+
         /*
         printf("Protocol: UDP\n");
         printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
@@ -190,12 +197,21 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     
     else if (ip_header->ip_p == IPPROTO_ICMP) 
     {
+        printf("Protocol: ICMP\n");
+        printf("Source IP: %d\n", src_ip);
+        printf("Destination IP: %d\n", dest_ip); 
+
         strcpy(packet_info.prot, "ICMP");
 
     } else {
         payload = NULL;
         payload_length = 0;
         // printf("Protocol: Other\n");
+
+        printf("Protocol: Other\n");
+        printf("Source IP: %d\n", src_ip);
+        printf("Destination IP: %d\n", dest_ip); 
+
         strcpy(packet_info.prot, "Other");
     }
     // if (payload && payload_length > 0) 
@@ -246,7 +262,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     
     pthread_mutex_unlock(&pbuf_lock);  // Always unlock
     
-    if (pbuf_size > 100)
+    if (pbuf_size > 10000)
     {
         pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
     }
@@ -268,7 +284,7 @@ void *pb_thread(void* args)
         pthread_mutex_lock(&pbuf_lock);
 
         // Wait until the condition is met (pbuf_size > 10000)
-        while (pbuf_size <= 100)
+        while (pbuf_size <= 10000)
         {
             pthread_cond_wait(&pbuf_cond, &pbuf_lock);
         }
