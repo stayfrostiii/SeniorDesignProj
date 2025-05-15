@@ -90,7 +90,7 @@ def remove_from_blacklist():
 
     try:
         # List the rules in the chain with handles
-        command = "sudo nft -a list chain inet combined_table input_chain"
+        command = "sudo nft -a list bridge filter forward"
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to find the rule handle
@@ -110,7 +110,7 @@ def remove_from_blacklist():
             return jsonify({"error": "IP address not found in blacklist"}), 404
 
         # Delete the rule using the handle
-        command = f"sudo nft delete rule inet combined_table input_chain handle {rule_handle}"
+        command = f"sudo nft delete rule bridge filter forward handle {rule_handle}"
         subprocess.run(command, shell=True, check=True)
 
         app.logger.info(f"IP {ip} removed from blacklist via nftables.")
