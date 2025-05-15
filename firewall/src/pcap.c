@@ -1,29 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netinet/ip.h>  // For IP header
-#include <netinet/tcp.h> // For TCP header
-#include <netinet/udp.h> // For UDP header
-#include <arpa/inet.h>   // For inet_ntoa()
-#include <netinet/ip_icmp.h> // Add at the top
-#include <netinet/if_ether.h>
-#include <pthread.h>
-#include <pcap.h>
-#include <nftables/libnftables.h>
 #include <time.h>
 #include <unistd.h>
-#include <msgpack.h>
-// #include <ndpi/ndpi_api.h>
-#include <fcntl.h>  // For open()
-#include <sys/mman.h>
 
-// gcc src/pcap.c -o build/pcap -lpcap -lmsgpackc -lpthread -lnftables 
+#include <netinet/ip.h>  // IPv4
+#include <netinet/tcp.h> // TCP
+#include <netinet/udp.h> // UDP
+#include <netinet/ip6.h> // IPv6
+#include <netinet/ip_icmp.h> // ICMP for IPv4
+#include <netinet/icmp6.h> // ICMP for IPv6
+#include <netinet/if_ether.h> // ARP
+
+#include <arpa/inet.h>   // For inet_ntoa()
+#include <pthread.h>
+
+#include <pcap.h>
+#include <msgpack.h>
+#include <fcntl.h>  // For open()
+
+#include <sys/mman.h> // For shared memory
 
 /* Global Variables */
-int counter = 0;
+
 // Packet capture stuff
-struct ndpi_detection_module_struct *ndpi_module;
-u_int32_t detection_tick_resolution = 1000;
+int counter = 0;
+
 // Multithread stuff
 pthread_mutex_t lock;
 pthread_cond_t cond;
@@ -260,14 +262,14 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
         //     packet_info.src_port, packet_info.dest_port, packet_info.time);
 
-        if (counter % 1000 == 0)
-            printf("%d\n", counter);
-        counter++;
+        // if (counter % 1000 == 0)
+        //     printf("%d\n", counter);
+        // counter++;
     } 
     
     else 
     {
-        printf("Non-IP packet\n");
+        // printf("Non-IP packet\n");
     }
 }
 
