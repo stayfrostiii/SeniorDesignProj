@@ -240,34 +240,26 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     */
         pthread_mutex_lock(&pbuf_lock);
 
-        if (mDNSFilter == 0)
+        /* Prevent overloading buffer array */
+        if (pbuf_active == 0)
         {
-            /* Prevent overloading buffer array */
-            if (pbuf_active == 0)
-            {
-                packet_buffer1[pbuf_size] = packet_info;
-            }
-            else
-            {
-                packet_buffer2[pbuf_size] = packet_info;
-            }
-
-            while (data->status != 0 && data->status != 2)
-            {
-                // Wait for status = 1 to write
-            }
-
-            data->packet_info = packet_info;
-            data->status = 1;
-            
-            pbuf_size++;
+            packet_buffer1[pbuf_size] = packet_info;
         }
-        
-        if (strcmp(packet_info.prot, "mDNS") == 0)
-            mDNSFilter = 1;
         else
-            mDNSFilter = 0;
+        {
+            packet_buffer2[pbuf_size] = packet_info;
+        }
 
+        while (data->status != 0 && data->status != 2)
+        {
+            // Wait for status = 1 to write
+        }
+
+        data->packet_info = packet_info;
+        data->status = 1;
+        
+        pbuf_size++;
+        
         pthread_mutex_unlock(&pbuf_lock);  // Always unlock
         
         if (pbuf_size > 10000)
