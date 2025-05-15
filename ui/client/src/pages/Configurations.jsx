@@ -350,28 +350,37 @@ export default function Configurations() {
         >
           Add Rule
         </button>
-        <table border="1" style={{ width: "100%", marginBottom: "1em" }}>
+        <table
+          style={{
+            width: "100%",
+            marginBottom: "1em",
+            borderCollapse: "collapse", // Ensure borders collapse for a cleaner look
+            border: "1px solid #ccc", // Thinner border for the table outline
+          }}
+        >
           <thead>
             <tr>
-              <th>#</th>
-              <th>Action</th>
-              <th>Source IP</th>
-              <th>Source Port</th>
-              <th>Destination IP</th>
-              <th>Destination Port</th>
-              <th>Actions</th>
+              <th style={{ border: "1px solid #ccc" }}>#</th>
+              <th style={{ border: "1px solid #ccc" }}>Action</th>
+              <th style={{ border: "1px solid #ccc" }}>Source IP</th>
+              <th style={{ border: "1px solid #ccc" }}>Source Port</th>
+              <th style={{ border: "1px solid #ccc" }}>Destination IP</th>
+              <th style={{ border: "1px solid #ccc" }}>Destination Port</th>
+              <th style={{ border: "1px solid #ccc" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {rules.map((rule, idx) => (
               <tr key={rule.id}>
-                <td>{idx + 1}</td>
-                <td className={actionColor(rule.action)}>{rule.action}</td>
-                <td>{rule.source_ip}</td>
-                <td>{rule.source_port}</td>
-                <td>{rule.destination_ip}</td>
-                <td>{rule.destination_port}</td>
-                <td>
+                <td style={{ border: "1px solid #ccc" }}>{idx + 1}</td>
+                <td style={{ border: "1px solid #ccc" }} className={actionColor(rule.action)}>
+                  {rule.action}
+                </td>
+                <td style={{ border: "1px solid #ccc" }}>{rule.source_ip}</td>
+                <td style={{ border: "1px solid #ccc" }}>{rule.source_port}</td>
+                <td style={{ border: "1px solid #ccc" }}>{rule.destination_ip}</td>
+                <td style={{ border: "1px solid #ccc" }}>{rule.destination_port}</td>
+                <td style={{ border: "1px solid #ccc" }}>
                   <button
                     onClick={() => {
                       setForm(rule);
