@@ -9,13 +9,12 @@
 #include <pthread.h>
 #include <pcap.h>
 #include <nftables/libnftables.h>
-#include <unistd.h>
 #include <time.h>
 #include <unistd.h>
 #include <msgpack.h>
 // #include <ndpi/ndpi_api.h>
 #include <fcntl.h>  // For open()
-#include <unistd.h> // For read()
+#include <sys/mman.h>
 
 // gcc src/pcap.c -o build/pcap -lpcap -lmsgpackc -lpthread -lnftables 
 
@@ -29,29 +28,36 @@ pthread_mutex_t lock;
 pthread_cond_t cond;
 int pauseCap = 0;
 
+pthread_mutex_t pbuf_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t pbuf_cond = PTHREAD_COND_INITIALIZER;
+
 typedef struct {
     char src_ip[16];
     char dest_ip[16];
     char prot[10];
 } Packet;
 
+
+typedef struct 
+{
+    volatile int status;
+    Packet packet_info;
+} smData;
+
 typedef struct {
     pcap_t* handle;
 } pc_args;
 
-// typedef struct 
-// {
-
-
-// };ui_args;
-
 // Packet stuff
-Packet packet_buffer1[2500];
-Packet packet_buffer2[2500];
+Packet packet_buffer1[20000];
+Packet packet_buffer2[20000];
 
 int pbuf_size = 0;
 int pbuf_active = 0;
 int logFile_counter = 0;
+
+#define SHM_NAME "/my_shm"
+#define SHM_SIZE 1024
 
 //reading ip from pipe
 void* pipe_thread(void* args) {
@@ -129,8 +135,9 @@ void serialize_packet(Packet *p, msgpack_packer *pk)
 
 void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) 
 {
-    
     Packet packet_info;
+    smData *data = (smData*)user_data;
+    // printf("%d\n", data->status);
 
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
     
@@ -139,7 +146,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     unsigned char *payload;
     int payload_offset;
     int payload_length;
-    printf("Packet captured: Length = %d bytes\n", pkthdr->len);
+    // printf("Packet captured: Length = %d bytes\n", pkthdr->len);
 
     // Extract IP header information
     char src_ip[INET_ADDRSTRLEN], dest_ip[INET_ADDRSTRLEN];
@@ -148,8 +155,11 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
 
-    strcpy(packet_info.src_ip, src_ip);
-    strcpy(packet_info.dest_ip, dest_ip);
+    strncpy(packet_info.src_ip, src_ip, INET_ADDRSTRLEN);
+    strncpy(packet_info.dest_ip, dest_ip, INET_ADDRSTRLEN);
+
+    packet_info.src_ip[INET_ADDRSTRLEN - 1] = '\0';
+    packet_info.dest_ip[INET_ADDRSTRLEN - 1] = '\0';
 
     // Check the protocol type (TCP or UDP)
     if (ip_header->ip_p == IPPROTO_TCP) 
@@ -162,10 +172,13 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         payload = (unsigned char *)(packet + payload_offset);
         
         // printf("Protocol: TCP\n");
+        // printf("Source IP: %s\n", src_ip);
+        // printf("Destination IP: %s\n", dest_ip); 
         // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
         // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
 
-
+        strncpy(packet_info.prot, "TCP", sizeof(packet_info.prot));
+        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
     } 
     
     else if (ip_header->ip_p == IPPROTO_UDP) 
@@ -175,26 +188,41 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         payload_offset = 14 + (ip_header->ip_hl << 2) + sizeof(struct udphdr); // Ethernet + IP + UDP
         payload_length = pkthdr->len - payload_offset;
         payload = (unsigned char *)(packet + payload_offset);
+
+        // printf("Protocol: UDP\n");
+        // printf("Source IP: %s\n", src_ip);
+        // printf("Destination IP: %s\n", dest_ip); 
+
         /*
         printf("Protocol: UDP\n");
         printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
         printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
         */
 
-
-        strcpy(packet_info.prot, "UDP");
-
+        strncpy(packet_info.prot, "UDP", sizeof(packet_info.prot));
+        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
     } 
     
     else if (ip_header->ip_p == IPPROTO_ICMP) 
     {
-        strcpy(packet_info.prot, "ICMP");
+        // printf("Protocol: ICMP\n");
+        // printf("Source IP: %s\n", src_ip);
+        // printf("Destination IP: %s\n", dest_ip); 
+
+        strncpy(packet_info.prot, "ICMP", sizeof(packet_info.prot));
+        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
 
     } else {
         payload = NULL;
         payload_length = 0;
         // printf("Protocol: Other\n");
-        strcpy(packet_info.prot, "Other");
+
+        // printf("Protocol: Other\n");
+        // printf("Source IP: %s\n", src_ip);
+        // printf("Destination IP: %s\n", dest_ip); 
+
+        strncpy(packet_info.prot, "Other", sizeof(packet_info.prot));
+        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
     }
     // if (payload && payload_length > 0) 
     // {
@@ -228,6 +256,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     // }
     // printf("-----------------------------\n");
 
+    pthread_mutex_lock(&pbuf_lock);
 
     /* Prevent overloading buffer array */
     if (pbuf_active == 0)
@@ -238,8 +267,26 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     {
         packet_buffer2[pbuf_size] = packet_info;
     }
+
+    while (data->status != 0 && data->status != 2)
+    {
+        // usleep(1);
+    }
+
+    data->packet_info = packet_info;
+    data->status = 1;
+    
     pbuf_size++;
-    printf("%d\n", counter);
+    
+    pthread_mutex_unlock(&pbuf_lock);  // Always unlock
+    
+    if (pbuf_size > 10000)
+    {
+        pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
+    }
+
+    if (counter % 1000 == 0)
+        printf("%d\n", counter);
     counter++;
 }
 
@@ -253,30 +300,44 @@ void *pb_thread(void* args)
 
     while(1)
     {
-        if (pbuf_size > 5000)
+        pthread_mutex_lock(&pbuf_lock);
+
+        // Wait until the condition is met (pbuf_size > 10000)
+        while (pbuf_size <= 10000)
         {
-            char file_name[32] = "./logs/packets";
-            char temp[4];
-
-            pbuf_active = ~pbuf_active;
-            for (int i = 0; i < pbuf_size; i++)
-            {
-                serialize_packet(&packet_buffer1[i], &pk);
-            }
-
-            sprintf(temp, "%02d", logFile_counter);
-            strcat(file_name, temp);
-            strcat(file_name, ".msgpack");
-            FILE *file = fopen(file_name, "wb");
-            fwrite(sbuf.data, 1, sbuf.size, file);
-            fclose(file);
-            pbuf_size = 0;
-            logFile_counter++;
-            if (logFile_counter > 9)
-            {
-                logFile_counter = 0;
-            }
+            pthread_cond_wait(&pbuf_cond, &pbuf_lock);
         }
+
+        // At this point, pbuf_size > 10000
+
+        // Do the rest of the processing
+        char file_name[32] = "./logs/packets";
+        char temp[4];
+
+        pbuf_active = !pbuf_active;
+        for (int i = 0; i < pbuf_size; i++)
+        {
+            serialize_packet(&packet_buffer1[i], &pk);
+        }
+
+        pbuf_size = 0;  // Reset pbuf_size
+
+        sprintf(temp, "%02d", logFile_counter);
+        strcat(file_name, temp);
+        strcat(file_name, ".msgpack");
+
+        FILE *file = fopen(file_name, "wb");
+        fwrite(sbuf.data, 1, sbuf.size, file);
+        fclose(file);
+
+        logFile_counter++;
+        if (logFile_counter > 9)
+        {
+            logFile_counter = 0;
+        }
+
+        // Unlock the mutex
+        pthread_mutex_unlock(&pbuf_lock);
     }
     msgpack_sbuffer_destroy(&sbuf);
 }
@@ -284,6 +345,26 @@ void *pb_thread(void* args)
 void* pc_thread(void* args)
 {
     pc_args* args_f = (pc_args*)args;
+    int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("shm_open");
+        exit(1);
+    }
+
+    // Configure size
+    if (ftruncate(shm_fd, SHM_SIZE) == -1) {
+        perror("ftruncate");
+        exit(1);
+    }
+
+    // Map memory
+    smData *ptr = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (ptr == MAP_FAILED) {
+        perror("mmap");
+        exit(1);
+    }
+
+    ptr->status = 0;
 
     while(1)
     {
@@ -302,13 +383,18 @@ void* pc_thread(void* args)
         pthread_mutex_unlock(&lock);
 
         // Capture packets here
-        if (pcap_loop(args_f->handle, 1, packet_handler, NULL) < 0) 
+        if (pcap_loop(args_f->handle, 1, packet_handler, (u_char *)ptr) < 0) 
         {
             printf("Error capturing packets: %s\n", pcap_geterr(args_f->handle));
             pcap_close(args_f->handle);
             exit(1);
         }
     }
+
+    // Cleanup
+    munmap(ptr, SHM_SIZE);
+    close(shm_fd);
+    shm_unlink(SHM_NAME);
 }
 
 void* ui_thread(void* args)
