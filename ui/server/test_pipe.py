@@ -25,7 +25,7 @@ try:
             status = struct.unpack('i', mapfile.read(4))[0]
             if status == 1:
                 break
-            time.sleep(0.001)  # Avoid CPU spinning (1 ms delay)
+            time.sleep(0.000001)  # Avoid CPU spinning (1 us delay)
 
         # Read entire smData struct
         mapfile.seek(0)
