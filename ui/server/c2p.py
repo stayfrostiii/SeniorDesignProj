@@ -67,10 +67,13 @@ async def handler(websocket, path):
     finally:
         mapfile.close()
 
-start_server = websockets.serve(handler, "10.0.0.100", 8081)
+async def main():
+    async with websockets.serve(handler, "10.0.0.100", 8081):
+        print("WebSocket server started on ws://10.0.0.100:8081")
+        await asyncio.Future()  # Run forever
 
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+if __name__ == "__main__":
+    asyncio.run(main())
 
 # try:
 #     while True:
