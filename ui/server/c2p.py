@@ -55,7 +55,7 @@ async def handler(websocket, path):
             await websocket.send(json.dumps(data))
 
             # Display received packet info
-            # print(f"[RECEIVED] Status={status} | Src={src_ip} | Dest={dest_ip} | Protocol={prot} | src_port={src_port} | dest_port={dest_port} | time={time}")
+            print(f"[RECEIVED] Status={status} | Src={src_ip} | Dest={dest_ip} | Protocol={prot} | src_port={src_port} | dest_port={dest_port} | time={time}")
 
             # Reset status to 0 (ready for next)
             mapfile.seek(0)
