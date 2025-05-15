@@ -37,6 +37,7 @@ typedef struct {
     char prot[10];
 } Packet;
 
+
 typedef struct 
 {
     volatile int status;

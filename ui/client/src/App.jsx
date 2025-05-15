@@ -13,7 +13,6 @@ export default function App() {
           <Link to="/" className="nav-item">Packet Window</Link>
           <Link to="/analyze" className="nav-item">Analyze</Link>
           <Link to="/configurations" className="nav-item">Configurations</Link>
-          <Link to="/settings" className="nav-item">Settings</Link>
         </header>
 
         {/* Main Content */}
@@ -22,7 +21,6 @@ export default function App() {
             <Route path="/" element={<PacketWindow />} />
             <Route path="/analyze" element={<Analyze />} />
             <Route path="/configurations" element={<Configurations />} />
-            {/* <Route path="/settings" element={<Settings />} /> */}
           </Routes>
         </div>
       </div>
