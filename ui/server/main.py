@@ -17,7 +17,7 @@ def get_blacklist():
     """Fetch the current blacklist from nftables."""
     try:
         # Run the Linux command to list the nftables rules
-        command = "sudo nft -a list chain inet combined_table input_chain"
+        command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to extract blacklisted IPs
@@ -60,7 +60,7 @@ def add_to_blacklist():
 
     try:
         # Run the Linux command to blacklist the IP
-        command = f"sudo nft add rule inet combined_table input_chain ip saddr {ip} drop"
+        command = f"sudo nft add rule bridge filter forward ip saddr {ip} drop"
         subprocess.run(command, shell=True, check=True)
 
         app.logger.info(f"IP {ip} added to blacklist via nftables.")
@@ -91,7 +91,7 @@ def remove_from_blacklist():
 
     try:
         # List the rules in the chain with handles
-        command = "sudo nft -a list chain inet combined_table input_chain"
+        command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to find the rule handle
@@ -111,7 +111,7 @@ def remove_from_blacklist():
             return jsonify({"error": "IP address not found in blacklist"}), 404
 
         # Delete the rule using the handle
-        command = f"sudo nft delete rule inet combined_table input_chain handle {rule_handle}"
+        command = f"sudo nft delete rule bridge filter forward handle {rule_handle}"
         subprocess.run(command, shell=True, check=True)
 
         app.logger.info(f"IP {ip} removed from blacklist via nftables.")
@@ -129,7 +129,7 @@ def get_rules():
     """Fetch the current rules from nftables."""
     try:
         # Run the Linux command to list the nftables rules
-        command = "sudo nft -a list chain inet combined_table input_chain"  # Use -a to include rule handles
+        command = "sudo nft -a list chain bridge filter forward"  # Use -a to include rule handles
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to extract rules and their handles
@@ -174,14 +174,14 @@ def add_rule():
 
     try:
         # Add the rule to nftables
-        command = f"sudo nft add rule inet combined_table input_chain ip saddr {source_ip}"
+        command = f"sudo nft add rule bridge filter forward ip saddr {source_ip}"
         if destination_port != "any":
             command += f" tcp dport {destination_port}"
         command += f" {data['action']}"  # Add the terminal action (e.g., drop, accept)
         subprocess.run(command, shell=True, check=True)
 
         # Retrieve the handle of the newly added rule
-        list_command = "sudo nft -a list chain inet combined_table input_chain"
+        list_command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(list_command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to find the handle of the newly added rule
@@ -220,7 +220,7 @@ def update_rule(rule_id):
 def delete_rule(rule_id):
     try:
         # List the rules in the chain with handles
-        command = "sudo nft -a list chain inet combined_table input_chain"
+        command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to find the rule handle that matches the rule_id
@@ -235,7 +235,7 @@ def delete_rule(rule_id):
             return jsonify({"error": "Rule not found in nftables"}), 404
 
         # Delete the rule using the handle
-        delete_command = f"sudo nft delete rule inet combined_table input_chain handle {rule_handle}"
+        delete_command = f"sudo nft delete rule bridge filter forward handle {rule_handle}"
         subprocess.run(delete_command, shell=True, check=True)
 
         app.logger.info(f"Rule with handle {rule_handle} deleted from nftables.")
@@ -306,4 +306,4 @@ def packet_stream():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8080)
+    app.run(host='0.0.0.0', port=8080, debug=True)

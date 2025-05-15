@@ -8,6 +8,6 @@ typedef struct {
     char prot[10];
 } Packet;
 
-void filter_packets(char* filename, char* filter, char* value, int* packet_num);
+void filter_packets(char* filename, char* filter, char* value, uint64_t* packet_num);
 
 #endif
