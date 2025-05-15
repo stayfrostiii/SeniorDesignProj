@@ -59,7 +59,7 @@ def add_to_blacklist():
 
     try:
         # Run the Linux command to blacklist the IP
-        command = f"sudo nft add rule inet combined_table input_chain ip saddr {ip} drop"
+        command = f"sudo nft add rule bridge filter forward ip saddr {ip} drop"
         subprocess.run(command, shell=True, check=True)
 
         app.logger.info(f"IP {ip} added to blacklist via nftables.")
