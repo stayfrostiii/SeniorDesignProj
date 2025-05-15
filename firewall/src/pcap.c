@@ -374,7 +374,7 @@ void* pc_thread(void* args)
         pthread_mutex_unlock(&lock);
 
         // Capture packets here
-        if (pcap_loop(args_f->handle, 1, packet_handler, (u_char *)&ptr) < 0) 
+        if (pcap_loop(args_f->handle, 1, packet_handler, (u_char *)ptr) < 0) 
         {
             printf("Error capturing packets: %s\n", pcap_geterr(args_f->handle));
             pcap_close(args_f->handle);
