@@ -20,6 +20,8 @@ async def handler(websocket, path):
         shm = posix_ipc.SharedMemory(SHM_NAME)
         mapfile = mmap.mmap(shm.fd, SHM_SIZE)
         shm.close_fd()
+        
+        print("here0")
 
         while True:
             # Wait for status == 1 (packet ready)
