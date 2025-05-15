@@ -154,8 +154,11 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
 
-    strcpy(packet_info.src_ip, src_ip);
-    strcpy(packet_info.dest_ip, dest_ip);
+    strncpy(packet_info.src_ip, src_ip, INET_ADDRSTRLEN);
+    strncpy(packet_info.dest_ip, dest_ip, INET_ADDRSTRLEN);
+
+    packet_info.src_ip[INET_ADDRSTRLEN - 1] = '\0';
+    packet_info.dest_ip[INET_ADDRSTRLEN - 1] = '\0';
 
     // Check the protocol type (TCP or UDP)
     if (ip_header->ip_p == IPPROTO_TCP) 
