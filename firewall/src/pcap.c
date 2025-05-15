@@ -9,7 +9,6 @@
 #include <pthread.h>
 #include <pcap.h>
 #include <nftables/libnftables.h>
-#include <unistd.h>
 #include <time.h>
 #include <unistd.h>
 #include <msgpack.h>
@@ -46,7 +45,7 @@ typedef struct
 {
 
 
-};ui_args;
+}ui_args;
 
 // Packet stuff
 Packet packet_buffer1[20000];
@@ -231,7 +230,6 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     // }
     // printf("-----------------------------\n");
 
-
     pthread_mutex_lock(&pbuf_lock);
 
     /* Prevent overloading buffer array */
@@ -281,12 +279,12 @@ void *pb_thread(void* args)
         char file_name[32] = "./logs/packets";
         char temp[4];
 
-        pbuf_active = ~pbuf_active;
+        pbuf_active = !pbuf_active;
         for (int i = 0; i < pbuf_size; i++)
         {
             serialize_packet(&packet_buffer1[i], &pk);
         }
-        
+
         pbuf_size = 0;  // Reset pbuf_size
 
         sprintf(temp, "%02d", logFile_counter);
