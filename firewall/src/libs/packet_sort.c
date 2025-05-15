@@ -50,9 +50,9 @@ void filter_packets(char* filename, char* filter, char* value, uint64_t* packet_
                         )
                         {
                             (*packet_num)++;
-                            printf("  %.*s: %.*s\n",
-                                key.via.str.size, key.via.str.ptr,
-                                val.via.str.size, val.via.str.ptr);
+                            // printf("  %.*s: %.*s\n",
+                            //     key.via.str.size, key.via.str.ptr,
+                            //     val.via.str.size, val.via.str.ptr);
                         }
                     }
                 }
