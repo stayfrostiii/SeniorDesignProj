@@ -59,57 +59,6 @@ int logFile_counter = 0;
 #define SHM_NAME "/my_shm"
 #define SHM_SIZE 1024
 
-//reading ip from pipe
-void* pipe_thread(void* args) {
-    const char *pipe_path = "/tmp/blacklist_pipe"; // Path to the named pipe
-    char buffer[256]; // Buffer to store the IP address
-
-    // Open the named pipe for reading
-    int pipe_fd = open(pipe_path, O_RDONLY);
-    if (pipe_fd < 0) {
-        perror("Failed to open named pipe");
-        pthread_exit(NULL);
-    }
-
-    printf("Listening for IPs on the named pipe...\n");
-
-    // Read from the pipe
-    ssize_t bytes_read = read(pipe_fd, buffer, sizeof(buffer) - 1);
-    if (bytes_read > 0) {
-        buffer[bytes_read] = '\0'; // Null-terminate the string
-        printf("Received IP from pipe: %s\n", buffer);
-
-
-        // Add a rule to blacklist the IP
-        struct nft_ctx *ctx = nft_ctx_new(NFT_CTX_DEFAULT);
-        if (!ctx) {
-            fprintf(stderr, "Failed to initialize nftables context\n");
-            close(pipe_fd);
-            pthread_exit(NULL);
-        }
-
-        char rule[512];
-        snprintf(rule, sizeof(rule),
-                 "add rule inet combined_table input_chain ip saddr %s drop", buffer);
-
-        if (nft_run_cmd_from_buffer(ctx, rule) < 0) {
-            fprintf(stderr, "Failed to add blacklist rule for IP: %s\n", buffer);
-        } else {
-            printf("Successfully added blacklist rule for IP: %s\n", buffer);
-        }
-
-        nft_ctx_free(ctx);
-    } else if (bytes_read == 0) {
-        // End of file (pipe closed on the writing end)
-        printf("Pipe closed by writer. Exiting pipe thread.\n");
-    } else {
-        perror("Error reading from pipe");
-    }
-
-    close(pipe_fd); // Close the pipe
-    pthread_exit(NULL); // Exit the thread after processing the first IP
-}
-
 void serialize_packet(Packet *p, msgpack_packer *pk)
 {
     msgpack_pack_map(pk, 3);  // 3 key-value pairs (src_ip, dst_ip, protocol)
@@ -224,38 +173,39 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         strncpy(packet_info.prot, "Other", sizeof(packet_info.prot));
         packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
     }
-    // if (payload && payload_length > 0) 
-    // {
+    /*
+    if (payload && payload_length > 0) 
+    {
 
-    //     // Use nDPI to detect the protocol
-    //     struct ndpi_flow_struct flow;
-    //     memset(&flow, 0, sizeof(flow));
+        // Use nDPI to detect the protocol
+        struct ndpi_flow_struct flow;
+        memset(&flow, 0, sizeof(flow));
 
-    //     // Process the packet and get the detected protocol
-    //     ndpi_protocol detected_protocol = ndpi_detection_process_packet(ndpi_module, &flow, payload, payload_length, time(NULL), NULL);
+        // Process the packet and get the detected protocol
+        ndpi_protocol detected_protocol = ndpi_detection_process_packet(ndpi_module, &flow, payload, payload_length, time(NULL), NULL);
 
-    //     // Get the protocol ID from the detected_protocol struct
-    //     u_int16_t protocol_id = ndpi_get_lower_proto(detected_protocol);
+        // Get the protocol ID from the detected_protocol struct
+        u_int16_t protocol_id = ndpi_get_lower_proto(detected_protocol);
 
-    //     // Get the protocol name using the protocol ID
-    //     const char *protocol_name = ndpi_get_proto_name(ndpi_module, protocol_id);
+        // Get the protocol name using the protocol ID
+        const char *protocol_name = ndpi_get_proto_name(ndpi_module, protocol_id);
 
-    //     printf("Detected protocol: %s\n", protocol_name);
+        printf("Detected protocol: %s\n", protocol_name);
 
-    //     // Detect malicious traffic
-    //     if (strcmp(protocol_name, "Malware") == 0) 
-    //     {
-    //         printf("Warning: Malicious traffic detected from %s to %s\n", src_ip, dest_ip);
-    //     }
+        // Detect malicious traffic
+        if (strcmp(protocol_name, "Malware") == 0) 
+        {
+            printf("Warning: Malicious traffic detected from %s to %s\n", src_ip, dest_ip);
+        }
 
-    //     // Detect potential intrusion (e.g., large payloads)
-    //     if (payload_length > 10000) 
-    //     { 
-    //         printf("Potential intrusion detected: Large payload size (%d bytes) from %s to %s\n", payload_length, src_ip, dest_ip);
-    //     }
-    // }
-    // printf("-----------------------------\n");
-
+        // Detect potential intrusion (e.g., large payloads)
+        if (payload_length > 10000) 
+        { 
+            printf("Potential intrusion detected: Large payload size (%d bytes) from %s to %s\n", payload_length, src_ip, dest_ip);
+        }
+    }
+    printf("-----------------------------\n");
+*/
     pthread_mutex_lock(&pbuf_lock);
 
     /* Prevent overloading buffer array */
@@ -270,7 +220,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 
     while (data->status != 0 && data->status != 2)
     {
-        // usleep(1);
+        // Wait for status = 1 to write
     }
 
     data->packet_info = packet_info;
@@ -397,34 +347,6 @@ void* pc_thread(void* args)
     shm_unlink(SHM_NAME);
 }
 
-void* ui_thread(void* args)
-{
-    struct timespec req, rem;
-    req.tv_sec = 1;
-    req.tv_nsec = 500000000L;
-
-    while(1)
-    {
-        // Wait for user input from connection
-        // If user input
-
-        // sleep(5);
-
-        // pthread_mutex_lock(&lock);
-        // pauseCap = 1;
-        // pthread_cond_signal(&cond);
-        // // Code for modifications
-
-        // nanosleep(&req, &rem);
-        // printf("Modification made...\n");
-        // nanosleep(&req, &rem);
-
-        // pauseCap = 0;
-
-        // pthread_mutex_unlock(&lock);
-    }
-}
-
 int main() 
 {
     // Getting device
@@ -445,110 +367,27 @@ int main()
     // Thread stuff
     pthread_t threads[3];
 
-        // Threads for Pipe
-        pthread_t pipeT;
-
+    // Threads for Pipe
+    pthread_t pipeT;
 
     int pcT, uiT, pbT;
     pc_args pcArg;
 
-    // // nDPI stuff
-    // ndpi_module = ndpi_init_detection_module(detection_tick_resolution);
-    // if (ndpi_module == NULL) 
-    // {
-    //     fprintf(stderr, "Failed to initialize nDPI module\n");
-    //     return -1;
-    // }
-
-    // Create the pipe thread
-    int pipeThreadStatus = pthread_create(&pipeT, NULL, pipe_thread, NULL);
-    if (pipeThreadStatus != 0) 
+    /*
+    // nDPI stuff
+    ndpi_module = ndpi_init_detection_module(detection_tick_resolution);
+    if (ndpi_module == NULL) 
     {
-        fprintf(stderr, "Failed to create pipe thread\n");
+        fprintf(stderr, "Failed to initialize nDPI module\n");
         return -1;
-    }
-    pthread_detach(pipeT);
-    // // Set up protocol detection
-    // NDPI_PROTOCOL_BITMASK detection_bitmask;
-    // NDPI_BITMASK_SET_ALL(detection_bitmask); // Enable detection for all protocols
-    // ndpi_set_protocol_detection_bitmask2(ndpi_module, &detection_bitmask);
+    }*/
 
-    //nftables stuff
-    struct nft_ctx *ctx;
-    const char *cmd;
-    
-    ctx = nft_ctx_new(NFT_CTX_DEFAULT);
-    if (!ctx)
-    {
-        fprintf(stderr,"nftables failed to creat");
-    }
+    /*
+    // Set up protocol detection
+    NDPI_PROTOCOL_BITMASK detection_bitmask;
+    NDPI_BITMASK_SET_ALL(detection_bitmask); // Enable detection for all protocols
+    ndpi_set_protocol_detection_bitmask2(ndpi_module, &detection_bitmask);*/
 
-    //Tables
-    const char *tables[] = 
-    {
-        "add table ip ipv4_table",       // IPv4 table
-        "add table ip6 ipv6_table",      // IPv6 table
-        "add table arp arp_table",       // ARP table
-        "add table inet combined_table" // Combined IPv4/IPv6 table
-    };
-
-    for(int i = 0; i < 4; i++) 
-    {
-        cmd = tables[i];
-        if (nft_run_cmd_from_buffer(ctx, cmd) < 0)
-        {
-            fprintf(stderr, "Failed to create table");
-        } 
-        else 
-        {
-            printf("Successfully created table: %s\n", cmd);
-        }
-    }
-
-    //chains
-    const char *chains[] = 
-    {
-        "add chain ip ipv4_table input_chain { type filter hook input priority 0; policy accept; }",
-        "add chain ip6 ipv6_table input_chain { type filter hook input priority 0; policy accept; }",
-        "add chain arp arp_table arp_chain { type filter hook input priority 0; policy accept; }",
-        "add chain inet combined_table input_chain { type filter hook input priority 0; policy accept; }"
-    };
-
-    for (int i = 0; i < 4; i++) 
-    {
-        cmd = chains[i];
-        if (nft_run_cmd_from_buffer(ctx, cmd) < 0)
-        {
-            fprintf(stderr, "Failed to create chain");
-        } 
-        else 
-        {
-            printf("Successfully created chain: %s\n", cmd);
-        }
-    }
-    //rules
-    const char *rules[] = {
-        // "add rule ip ipv4_table input_chain ip saddr 192.168.1.0/24 accept",
-        // "add rule ip6 ipv6_table input_chain ip6 saddr fe80::/10 accept",
-        // "add rule inet combined_table input_chain ct state established,related accept",
-    };
-    
-    int num_rules = sizeof(rules) / sizeof(rules[0]);
-
-    for (int i = 0; i < num_rules; i++) 
-    {
-        cmd = rules[i];
-        if (nft_run_cmd_from_buffer(ctx, cmd) < 0)
-        {
-            fprintf(stderr, "Failed to add rule");
-        } 
-        else 
-        {
-            printf("Successfully added rule: %s\n", cmd);
-            
-        }
-    }
-    
     /* Finds all devices */
 
     if (pcap_findalldevs(&allDevs, errbuf) != 0)
@@ -596,12 +435,8 @@ int main()
 
     pcArg.handle = handle;
     pcT = pthread_create(&threads[0], NULL, pc_thread, &pcArg);
-    uiT = pthread_create(&threads[1], NULL, ui_thread, NULL);
-    pbT = pthread_create(&threads[2], NULL, pb_thread, NULL);
 
     pthread_join(threads[0], NULL);
-    pthread_join(threads[1], NULL);
-    pthread_join(threads[2], NULL);
 
     pcap_close(handle);
     return 0;
