@@ -265,7 +265,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 
     while (data->status != 0 && data->status != 2)
     {
-        usleep(1);
+        // usleep(1);
     }
 
     data->packet_info = packet_info;
