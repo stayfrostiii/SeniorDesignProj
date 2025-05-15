@@ -164,8 +164,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         payload = (unsigned char *)(packet + payload_offset);
         
         printf("Protocol: TCP\n");
-        printf("Source IP: %d\n", src_ip);
-        printf("Destination IP: %d\n", dest_ip); 
+        printf("Source IP: %s\n", src_ip);
+        printf("Destination IP: %s\n", dest_ip); 
         // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
         // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
 
@@ -181,8 +181,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         payload = (unsigned char *)(packet + payload_offset);
 
         printf("Protocol: UDP\n");
-        printf("Source IP: %d\n", src_ip);
-        printf("Destination IP: %d\n", dest_ip); 
+        printf("Source IP: %s\n", src_ip);
+        printf("Destination IP: %s\n", dest_ip); 
 
         /*
         printf("Protocol: UDP\n");
@@ -198,8 +198,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     else if (ip_header->ip_p == IPPROTO_ICMP) 
     {
         printf("Protocol: ICMP\n");
-        printf("Source IP: %d\n", src_ip);
-        printf("Destination IP: %d\n", dest_ip); 
+        printf("Source IP: %s\n", src_ip);
+        printf("Destination IP: %s\n", dest_ip); 
 
         strcpy(packet_info.prot, "ICMP");
 
@@ -209,8 +209,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         // printf("Protocol: Other\n");
 
         printf("Protocol: Other\n");
-        printf("Source IP: %d\n", src_ip);
-        printf("Destination IP: %d\n", dest_ip); 
+        printf("Source IP: %s\n", src_ip);
+        printf("Destination IP: %s\n", dest_ip); 
 
         strcpy(packet_info.prot, "Other");
     }
