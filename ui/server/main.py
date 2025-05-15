@@ -90,7 +90,7 @@ def remove_from_blacklist():
 
     try:
         # List the rules in the chain with handles
-        command = "sudo nft -a list bridge filter forward"
+        command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to find the rule handle
