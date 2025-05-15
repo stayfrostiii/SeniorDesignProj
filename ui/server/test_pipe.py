@@ -78,10 +78,11 @@ try:
         src_ip = src_ip.decode('utf-8', errors='replace').rstrip('\x00')
         dest_ip = dest_ip.decode('utf-8', errors='replace').rstrip('\x00')
         prot = prot.decode('utf-8', errors='replace').rstrip('\x00')
-        src_port = src_port.decode('utf-8', errors='replace').rstrip('\x00')
+        time = time.decode('utf-8', errors='replace').rstrip('\x00')
+        
 
         # Display received packet info
-        print(f"[RECEIVED] Status={status} | Src={src_ip} | Dest={dest_ip} | Protocol={prot}")
+        print(f"[RECEIVED] Status={status} | Src={src_ip} | Dest={dest_ip} | Protocol={prot} | src_port={src_port} | dest_port={dest_port} | time={time}")
 
         # Reset status to 0 (ready for next)
         mapfile.seek(0)
