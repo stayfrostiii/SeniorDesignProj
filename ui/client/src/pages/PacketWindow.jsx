@@ -5,10 +5,9 @@ export default function PacketWindow() {
   const tableRef = useRef(null);
 
   useEffect(() => {
-    // Connect to the /packet-stream endpoint using EventSource
-    const eventSource = new EventSource("http://127.0.0.1:8080/packet-stream");
-
-    eventSource.onmessage = (event) => {
+    const socket = new WebSocket('ws://10.0.0.100:8081');
+    
+    socket.onmessage = (event) => {
       const packet = JSON.parse(event.data);
 
       // Add the new packet to the top of the list
@@ -26,13 +25,12 @@ export default function PacketWindow() {
       }
     };
 
-    eventSource.onerror = () => {
-      console.error("Error connecting to the packet stream.");
-      eventSource.close();
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
     };
 
     return () => {
-      eventSource.close();
+      socket.close();
     };
   }, []);
 
