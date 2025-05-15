@@ -12,17 +12,15 @@ SHM_SIZE = 1024
 smdata_fmt = 'i16s16s10sii26s'
 smdata_size = struct.calcsize(smdata_fmt)
 
-print(smdata_size)
-
-# Open and map shared memory
-shm = posix_ipc.SharedMemory(SHM_NAME)
-mapfile = mmap.mmap(shm.fd, SHM_SIZE)
-shm.close_fd()
-
 print("Python listener started, waiting for packets...\n")
 
 async def handler(websocket, path):
     try:
+
+        shm = posix_ipc.SharedMemory(SHM_NAME)
+        mapfile = mmap.mmap(shm.fd, SHM_SIZE)
+        shm.close_fd()
+
         while True:
             # Wait for status == 1 (packet ready)
             while True:
@@ -30,7 +28,7 @@ async def handler(websocket, path):
                 status = struct.unpack('i', mapfile.read(4))[0]
                 if status == 1:
                     break
-                # time.sleep(0.000001)  # Avoid CPU spinning (1 us delay)
+                await asyncio.sleep(0.000001)
 
             print("here1")
 
@@ -70,8 +68,9 @@ async def handler(websocket, path):
 
             await websocket.send(json.dumps(data))
 
-    except KeyboardInterrupt:
-        print("\nExiting gracefully.")
+    except Exception as e:
+        print(f"Handler error: {e}")
+        raise
     finally:
         mapfile.close()
 
