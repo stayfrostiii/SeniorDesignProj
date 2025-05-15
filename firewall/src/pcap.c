@@ -35,6 +35,9 @@ typedef struct {
     char src_ip[16];
     char dest_ip[16];
     char prot[10];
+    int src_port;
+    int dest_port;
+    char time[26];
 } Packet;
 
 
@@ -91,16 +94,18 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
     struct tcphdr *tcp_header;
     struct udphdr *udp_header;
+    struct icmphdr *icmp_header;
 
-    unsigned char *payload;
-    int payload_offset;
-    int payload_length;
+
     // printf("Packet captured: Length = %d bytes\n", pkthdr->len);
-
 
     char src_ip[INET_ADDRSTRLEN], dest_ip[INET_ADDRSTRLEN];
     char protocol[10] = "Other"; // Default protocol
     int src_port = 0, dest_port = 0;
+
+    time_t now = time(NULL);
+    strncpy(packet_info.time, ctime(&now), sizeof(packet_info.time));
+    packet_info.time[sizeof(packet_info.time) - 1] = '\0';
 
     // Extract IP header information
     inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
@@ -116,17 +121,15 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     if (ip_header->ip_p == IPPROTO_TCP) 
     {
         tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
-
-        /*For nDPI portion*/
-        payload_offset = 14 + (ip_header->ip_hl << 2) + (tcp_header->th_off << 2); // Ethernet + IP + TCP
-        payload_length = pkthdr->len - payload_offset;
-        payload = (unsigned char *)(packet + payload_offset);
         
         // printf("Protocol: TCP\n");
         // printf("Source IP: %s\n", src_ip);
         // printf("Destination IP: %s\n", dest_ip); 
         // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
         // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+
+        packet_info.src_port = ntohs(tcp_header->th_sport);
+        packet_info.dest_port = ntohs(tcp_header->th_dport);
 
         strncpy(packet_info.prot, "TCP", sizeof(packet_info.prot));
         packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
@@ -135,10 +138,6 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     else if (ip_header->ip_p == IPPROTO_UDP) 
     {
         udp_header = (struct udphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
-
-        payload_offset = 14 + (ip_header->ip_hl << 2) + sizeof(struct udphdr); // Ethernet + IP + UDP
-        payload_length = pkthdr->len - payload_offset;
-        payload = (unsigned char *)(packet + payload_offset);
 
         // printf("Protocol: UDP\n");
         // printf("Source IP: %s\n", src_ip);
@@ -150,27 +149,38 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
         */
 
+        packet_info.src_port = ntohs(udp_header->uh_sport);
+        packet_info.dest_port = ntohs(udp_header->uh_dport);
+
         strncpy(packet_info.prot, "UDP", sizeof(packet_info.prot));
         packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
     } 
     
     else if (ip_header->ip_p == IPPROTO_ICMP) 
     {
+        icmp_header = (struct icmphdr *)(packet + 14 + (ip_header->ip_hl << 2));
         // printf("Protocol: ICMP\n");
         // printf("Source IP: %s\n", src_ip);
         // printf("Destination IP: %s\n", dest_ip); 
 
+        packet_info.src_port = ntohs(icmp_header->ih_sport);
+        packet_info.dest_port = ntohs(icmp_header->ih_dport);
+
         strncpy(packet_info.prot, "ICMP", sizeof(packet_info.prot));
         packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+    }
 
-    } else {
-        payload = NULL;
-        payload_length = 0;
+    else 
+    {
+        other_header = (struct icmphdr *)(packet + 14 + (ip_header->ip_hl << 2));
         // printf("Protocol: Other\n");
 
         // printf("Protocol: Other\n");
         // printf("Source IP: %s\n", src_ip);
         // printf("Destination IP: %s\n", dest_ip); 
+
+        packet_info.src_port = 0;
+        packet_info.dest_port = 0;
 
         strncpy(packet_info.prot, "Other", sizeof(packet_info.prot));
         packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
