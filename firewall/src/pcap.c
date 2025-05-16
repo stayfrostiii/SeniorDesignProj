@@ -518,7 +518,6 @@ int main()
      
     /* Take the first device */
     dev = allDevs;
-    dev = dev->next; // Select ethernet port going to host from pi
     printf("%s\n", dev->name);
 
     /* Open capturing sesh */
