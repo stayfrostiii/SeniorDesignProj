@@ -49,7 +49,8 @@ async def producer():
                 "dest_port": dest_port
             }
 
-            print(f"[RECEIVED] Src={src_ip} | Dest={dest_ip} | Protocol={prot} | src_port={src_port} | dest_port={dest_port} | time={time}")
+            # PRINT PACKET TO TERMINAL
+            # print(f"[RECEIVED] Src={src_ip} | Dest={dest_ip} | Protocol={prot} | src_port={src_port} | dest_port={dest_port} | time={time}")
 
             # Reset status
             mapfile.seek(0)

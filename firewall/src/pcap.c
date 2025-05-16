@@ -226,7 +226,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 
         case ETHERTYPE_ARP: 
         {
-            printf("ARP\n");
+            // printf("ARP\n");
             break;
         }
 
@@ -344,7 +344,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     
         default:
         {
-            printf("Non-IP packet\n");
+            // printf("Non-IP packet\n");
             break;
         }
     }
@@ -384,9 +384,10 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
     }
 
-    printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
-        packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
-        packet_info.src_port, packet_info.dest_port, packet_info.time);
+    // PRINT PACKETS TO TERMINAL
+    // printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
+    //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
+    //     packet_info.src_port, packet_info.dest_port, packet_info.time);
     
     // if (counter % 100 == 0)
     //     printf("%d\n", counter);
