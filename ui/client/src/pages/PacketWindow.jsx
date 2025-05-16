@@ -57,7 +57,8 @@ export default function PacketWindow() {
       >
         <table
           style={{
-            width: "100%",
+            minWidth: "100%",
+            borderCollapse: "collapse",
             border: "1px solid #333", // Add grid lines
           }}
         >
