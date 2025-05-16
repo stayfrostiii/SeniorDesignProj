@@ -59,8 +59,10 @@ def add_to_blacklist():
             return jsonify({"error": f"General rule already exists for IP {ip}. Remove it before adding to blacklist."}), 400
 
     try:
-        # Run the Linux command to blacklist the IP
+        # Run the Linux command to blacklist the IP as source/destination
         command = f"sudo nft add rule bridge filter forward ip saddr {ip} drop"
+        subprocess.run(command, shell=True, check=True)
+        command = f"sudo nft add rule bridge filter forward ip daddr {ip} drop"
         subprocess.run(command, shell=True, check=True)
 
         # Update nftables.conf to make nftable changes persistent
@@ -99,7 +101,7 @@ def remove_from_blacklist():
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to find the rule handle
-        rule_handle = None
+        rule_handleS = None
         for line in result.stdout.splitlines():
             if f"ip saddr {ip} drop" in line:
                 parts = line.split()
@@ -107,15 +109,15 @@ def remove_from_blacklist():
                 if "handle" in parts:
                     handle_index = parts.index("handle") + 1
                     if handle_index < len(parts) and parts[handle_index].isdigit():
-                        rule_handle = parts[handle_index]
+                        rule_handleS = parts[handle_index]
                         break
 
-        if not rule_handle:
+        if not rule_handleS:
             app.logger.error(f"Rule for IP {ip} not found in nftables.")
             return jsonify({"error": "IP address not found in blacklist"}), 404
 
         # Delete the rule using the handle
-        command = f"sudo nft delete rule bridge filter forward handle {rule_handle}"
+        command = f"sudo nft delete rule bridge filter forward handle {rule_handleS}"
         subprocess.run(command, shell=True, check=True)
 
         # Update nftables.conf to make nftable changes persistent
