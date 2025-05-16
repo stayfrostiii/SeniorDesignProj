@@ -240,9 +240,9 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
         //     packet_info.src_port, packet_info.dest_port, packet_info.time);
 
-        // if (counter % 1000 == 0)
-        //     printf("%d\n", counter);
-        // counter++;
+        if (counter % 10 == 0)
+            printf("%d\n", counter);
+        counter++;
     } 
     
     else 
