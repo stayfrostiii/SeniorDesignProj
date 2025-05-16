@@ -3,22 +3,11 @@ import React, { useState, useEffect, useRef } from "react";
 export default function PacketWindow() {
   const [packets, setPackets] = useState([]);
   const tableRef = useRef(null);
+  const socketRef = useRef(null);
 
   useEffect(() => {
-    try {
-      const savedPackets = sessionStorage.getItem("packets");
-      if (savedPackets) {
-        const parsedPackets = JSON.parse(savedPackets);
-        if (Array.isArray(parsedPackets)) {
-          setPackets(parsedPackets);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to parse packets from sessionStorage:", err);
-      sessionStorage.removeItem("packets"); // clean up if corrupted
-    }
-
     const socket = new WebSocket('ws://10.0.0.100:8081');
+    socketRef.current = socket;
     
     socket.onmessage = (event) => {
       const packet = JSON.parse(event.data);
@@ -29,8 +18,6 @@ export default function PacketWindow() {
         if (updatedPackets.length > 21) {
           updatedPackets.pop(); // Remove the last packet if the list exceeds 50
         }
-        
-        sessionStorage.setItem("packets", JSON.stringify(updatedPackets));
         return updatedPackets;
       });
 
@@ -46,7 +33,6 @@ export default function PacketWindow() {
     };
 
     return () => {
-      sessionStorage.removeItem("packets");
       socket.close();
     };
   }, []);
