@@ -257,8 +257,6 @@ def add_to_blacklist():
         # Run the Linux command to blacklist the IP as source/destination
         command = f"sudo nft add rule bridge filter forward ip saddr {ip} drop"
         subprocess.run(command, shell=True, check=True)
-        command = f"sudo nft add rule bridge filter forward ip daddr {ip} drop"
-        subprocess.run(command, shell=True, check=True)
 
         # Update nftables.conf to make nftable changes persistent
         command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
@@ -311,28 +309,8 @@ def remove_from_blacklist():
             app.logger.error(f"Rule for IP {ip} not found in nftables.")
             return jsonify({"error": "IP address not found in blacklist"}), 404
 
-        command = "sudo nft -a list chain bridge filter forward"
-        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-        rule_handleD = None
-        for line in result.stdout.splitlines():
-            if f"ip saddr {ip} drop" in line:
-                parts = line.split()
-                # Find the word "handle" and extract the handle value
-                if "handle" in parts:
-                    handle_index = parts.index("handle") + 1
-                    if handle_index < len(parts) and parts[handle_index].isdigit():
-                        rule_handleD = parts[handle_index]
-                        break
-
-        if not rule_handleD:
-            app.logger.error(f"Rule for IP {ip} not found in nftables.")
-            return jsonify({"error": "IP address not found in blacklist"}), 404
-
         # Delete the rule using the handle
         command = f"sudo nft delete rule bridge filter forward handle {rule_handleS}"
-        subprocess.run(command, shell=True, check=True)
-        command = f"sudo nft delete rule bridge filter forward handle {rule_handleD}"
         subprocess.run(command, shell=True, check=True)
 
         # Update nftables.conf to make nftable changes persistent
