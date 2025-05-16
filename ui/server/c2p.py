@@ -89,7 +89,7 @@ try:
             status = struct.unpack('i', mapfile.read(4))[0]
             if status == 1:
                 break
-            await asyncio.sleep(0.000001)
+            # await asyncio.sleep(0.000001)
 
         # Read entire smData struct
         mapfile.seek(0)
