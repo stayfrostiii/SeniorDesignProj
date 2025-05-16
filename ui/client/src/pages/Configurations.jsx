@@ -44,7 +44,7 @@ export default function Configurations() {
   useEffect(() => {
     const fetchBlacklist = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:8080/get-blacklist");
+        const response = await fetch("http://10.0.0.100:8080/get-blacklist");
         if (response.ok) {
           const data = await response.json();
           setBlacklist(data.blacklist);
@@ -63,7 +63,7 @@ export default function Configurations() {
 
   const fetchRules = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8080/rules");
+      const res = await axios.get("http://10.0.0.100:8080/rules");
       setRules(res.data); // Update the rules state with the data from the backend
     } catch (error) {
       console.error("Error fetching rules:", error);
@@ -73,9 +73,9 @@ export default function Configurations() {
   const handleSaveRule = async () => {
     try {
       if (editingId) {
-        await axios.put(`http://127.0.0.1:8080/rules/${editingId}`, form);
+        await axios.put(`http://10.0.0.100:8080/rules/${editingId}`, form);
       } else {
-        await axios.post("http://127.0.0.1:8080/rules", form);
+        await axios.post("http://10.0.0.100:8080/rules", form);
       }
       setForm({
         action: "allow",
@@ -101,7 +101,7 @@ export default function Configurations() {
 
   const handleDeleteRule = async (id) => {
     try {
-      await axios.delete(`http://127.0.0.1:8080/rules/${id}`);
+      await axios.delete(`http://10.0.0.100:8080/rules/${id}`);
       fetchRules();
     } catch (error) {
       alert("Failed to delete rule.");
@@ -121,7 +121,7 @@ export default function Configurations() {
       return;
     }
     try {
-      const response = await fetch("http://127.0.0.1:8080/add-to-blacklist", {
+      const response = await fetch("http://10.0.0.100:8080/add-to-blacklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ip }),
@@ -134,13 +134,13 @@ export default function Configurations() {
         alert("Failed to add IP to blacklist.");
       }
     } catch (error) {
-      alert("An error occurred. Please try again.");
+      alert("An error occurred. Fuck you Please try again.");
     }
   };
 
   const handleRemoveFromBlacklist = async (ipToRemove) => {
     try {
-      const response = await fetch("http://127.0.0.1:8080/remove-from-blacklist", {
+      const response = await fetch("http://10.0.0.100:8080/remove-from-blacklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ip: ipToRemove }),
