@@ -3,15 +3,9 @@ import React, { useState, useEffect, useRef } from "react";
 export default function PacketWindow() {
   const [packets, setPackets] = useState([]);
   const tableRef = useRef(null);
-  const socketRef = useRef(null);
 
   useEffect(() => {
-    if (socketRef.current) {
-      socketRef.current.close();
-    }
-    
     const socket = new WebSocket('ws://10.0.0.100:8081');
-    socketRef.current = socket;
     
     socket.onmessage = (event) => {
       const packet = JSON.parse(event.data);
@@ -32,15 +26,11 @@ export default function PacketWindow() {
     };
 
     socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      alert("Error");
+      alert(error);
     };
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-      }
+      socket.close();
     };
   }, []);
 
