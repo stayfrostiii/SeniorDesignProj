@@ -360,13 +360,13 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         packet_buffer2[pbuf_size] = packet_info;
     }
 
-    // while (data->status != 0 && data->status != 2)
-    // {
-    //     // Wait for status = 1 to write
-    // }
+    while (data->status != 0 && data->status != 2)
+    {
+        // Wait for status = 1 to write
+    }
 
-    // data->packet_info = packet_info;
-    // data->status = 1;
+    data->packet_info = packet_info;
+    data->status = 1;
     
     pbuf_size++;
     
@@ -382,8 +382,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         packet_info.src_port, packet_info.dest_port, packet_info.time);
     
     // if (counter % 100 == 0)
-        printf("%d\n", counter);
-    counter++;
+    //     printf("%d\n", counter);
+    // counter++;
 }
 
 void *pb_thread(void* args)
