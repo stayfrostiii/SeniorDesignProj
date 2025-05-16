@@ -219,13 +219,13 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             packet_buffer2[pbuf_size] = packet_info;
         }
 
-        while (data->status != 0 && data->status != 2)
-        {
-            // Wait for status = 1 to write
-        }
+        // while (data->status != 0 && data->status != 2)
+        // {
+        //     // Wait for status = 1 to write
+        // }
 
-        data->packet_info = packet_info;
-        data->status = 1;
+        // data->packet_info = packet_info;
+        // data->status = 1;
         
         pbuf_size++;
         
@@ -236,9 +236,9 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
         }
 
-        // printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
-        //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
-        //     packet_info.src_port, packet_info.dest_port, packet_info.time);
+        printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
+            packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
+            packet_info.src_port, packet_info.dest_port, packet_info.time);
 
         if (counter % 10 == 0)
             printf("%d\n", counter);
