@@ -30,7 +30,7 @@ export default function Analyze() {
   // Function to fetch data from backend
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:8080/data');
+      const response = await fetch('http://10.0.0.100:8080/data');
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
