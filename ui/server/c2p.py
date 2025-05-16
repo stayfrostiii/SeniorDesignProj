@@ -41,8 +41,8 @@ async def handler(websocket):
 
             # ethType = IPv6
             elif ethType == 1:
-                src_ip = src_ip.decode('utf-8', errors='replace').rstrip('\x00')
-                dest_ip = dest_ip.decode('utf-8', errors='replace').rstrip('\x00')
+                src_ip = src_ip.decode('ascii', errors='replace').rstrip('\x00')
+                dest_ip = dest_ip.decode('ascii', errors='replace').rstrip('\x00')
 
             # Decode byte strings
             prot = prot.decode('utf-8', errors='replace').rstrip('\x00')
