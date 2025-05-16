@@ -554,8 +554,6 @@ int main()
         }
     }
 
-    ipaddrFound = 0;
-
     pcArg.handle = handle;
     pcT = pthread_create(&threads[0], NULL, pc_thread, &pcArg);
     pbT = pthread_create(&threads[1], NULL, pb_thread, NULL);
