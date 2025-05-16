@@ -68,23 +68,23 @@ export default function PacketWindow() {
         >
           <thead>
             <tr>
-              <th style={{ width: "20%", border: "1px solid #333" }}>Timestamp</th>
-              <th style={{ width: "22%", border: "1px solid #333" }}>Source IP</th>
-              <th style={{ width: "22%", border: "1px solid #333" }}>Destination IP</th>
-              <th style={{ width: "12%", border: "1px solid #333" }}>Protocol</th>
-              <th style={{ width: "12%", border: "1px solid #333" }}>Source Port</th>
-              <th style={{ width: "12%", border: "1px solid #333" }}>Destination Port</th>
+              <th style={{ maxWidth: "20%", border: "1px solid #333" }}>Timestamp</th>
+              <th style={{ maxWidth: "22%", border: "1px solid #333" }}>Source IP</th>
+              <th style={{ maxWidth: "22%", border: "1px solid #333" }}>Destination IP</th>
+              <th style={{ maxWidth: "12%", border: "1px solid #333" }}>Protocol</th>
+              <th style={{ maxWidth: "12%", border: "1px solid #333" }}>Source Port</th>
+              <th style={{ maxWidth: "12%", border: "1px solid #333" }}>Destination Port</th>
             </tr>
           </thead>
           <tbody>
             {packets.map((packet, index) => (
               <tr key={index}>
-                <td style={{ border: "1px solid #333" }}>{packet.time}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.src_ip}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.dest_ip}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.prot}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.src_port}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.dest_port}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.time}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.src_ip}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.dest_ip}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.prot}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.src_port}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.dest_port}</td>
               </tr>
             ))}
           </tbody>
