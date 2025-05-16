@@ -354,29 +354,32 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     // printf("[RECEIVED] Src=%s | Dest=%s | Protocol=%s | src_port=%d | dest_port=%d | time=%s\n", 
     //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot, packet_info.src_port, packet_info.dest_port, packet_info.time);
 
-    /* Prevent overloading buffer array */
-    if (pbuf_active == 0)
+    if (packet_info.src_port != 8081 && packet_info.dest_port != 8081)
     {
-        packet_buffer1[pbuf_size] = packet_info;
-    }
-    else
-    {
-        packet_buffer2[pbuf_size] = packet_info;
+        /* Prevent overloading buffer array */
+        if (pbuf_active == 0)
+        {
+            packet_buffer1[pbuf_size] = packet_info;
+        }
+        else
+        {
+            packet_buffer2[pbuf_size] = packet_info;
+        }
+
+        while (data->status != 0 && data->status != 2)
+        {
+            // Wait for status = 0 to write
+        }
+
+        if (strcmp(packet_info.prot, "mDNS") != 0)
+        {
+            data->packet_info = packet_info;
+            data->status = 1;
+        }
+        
+        pbuf_size++;
     }
 
-    while (data->status != 0 && data->status != 2)
-    {
-        // Wait for status = 0 to write
-    }
-
-    if (strcmp(packet_info.prot, "mDNS") != 0)
-    {
-        data->packet_info = packet_info;
-        data->status = 1;
-    }
-    
-    pbuf_size++;
-    
     pthread_mutex_unlock(&pbuf_lock);  // Always unlock
     
     if (pbuf_size > 10000)
