@@ -21,6 +21,10 @@
 
 #include <sys/mman.h> // For shared memory
 
+#define MAX_IP_STRLEN INET6_ADDRSTRLEN
+#define SHM_NAME "/my_shm"
+#define SHM_SIZE 1024
+
 /* Global Variables */
 
 // Packet capture stuff
@@ -31,9 +35,11 @@ int mDNSFilter = 0;
 pthread_mutex_t pbuf_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t pbuf_cond = PTHREAD_COND_INITIALIZER;
 
+
+
 typedef struct {
-    char src_ip[16];
-    char dest_ip[16];
+    char src_ip[MAX_IP_STRLEN];
+    char dest_ip[MAX_IP_STRLEN];
     char prot[10];
     int src_port;
     int dest_port;
@@ -58,9 +64,6 @@ Packet packet_buffer2[20000];
 int pbuf_size = 0;
 int pbuf_active = 0;
 int logFile_counter = 0;
-
-#define SHM_NAME "/my_shm"
-#define SHM_SIZE 1024
 
 void serialize_packet(Packet *p, msgpack_packer *pk, msgpack_sbuffer *sbuf)
 {
@@ -123,11 +126,14 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             int dest_port = 0;
 
             // Extract IP header information
-            inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
-            inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
+            // inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
+            // inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
 
-            strncpy(packet_info.src_ip, src_ip, INET_ADDRSTRLEN);
-            strncpy(packet_info.dest_ip, dest_ip, INET_ADDRSTRLEN);
+            // strncpy(packet_info.src_ip, src_ip, INET_ADDRSTRLEN);
+            // strncpy(packet_info.dest_ip, dest_ip, INET_ADDRSTRLEN);
+
+            snprintf(packet_info.src_ip, sizeof(packet_info.src_ip), "%s", src_ip);
+            snprintf(packet_info.dest_ip, sizeof(packet_info.dest_ip), "%s", dest_ip);
 
             packet_info.src_ip[INET_ADDRSTRLEN - 1] = '\0';
             packet_info.dest_ip[INET_ADDRSTRLEN - 1] = '\0';
@@ -240,11 +246,14 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             inet_ntop(AF_INET6, &(ip6_hdr->ip6_src), src_ip, INET6_ADDRSTRLEN);
             inet_ntop(AF_INET6, &(ip6_hdr->ip6_dst), dest_ip, INET6_ADDRSTRLEN);
 
-            strncpy(packet_info.src_ip, src_ip, INET6_ADDRSTRLEN);
-            strncpy(packet_info.dest_ip, dest_ip, INET6_ADDRSTRLEN);
+            // strncpy(packet_info.src_ip, src_ip, INET6_ADDRSTRLEN);
+            // strncpy(packet_info.dest_ip, dest_ip, INET6_ADDRSTRLEN);
 
-            packet_info.src_ip[INET6_ADDRSTRLEN - 1] = '\0';
-            packet_info.dest_ip[INET6_ADDRSTRLEN - 1] = '\0';
+            // packet_info.src_ip[INET6_ADDRSTRLEN - 1] = '\0';
+            // packet_info.dest_ip[INET6_ADDRSTRLEN - 1] = '\0';
+
+            snprintf(packet_info.src_ip, sizeof(packet_info.src_ip), "%s", src_ip);
+            snprintf(packet_info.dest_ip, sizeof(packet_info.dest_ip), "%s", dest_ip);
 
             switch(ip6_hdr->ip6_nxt)
             {
