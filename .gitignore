@@ -2,3 +2,5 @@
 *.msgpack
 /.vscode
 /ui/server/venv
+node_modules
+.venv

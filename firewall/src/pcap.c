@@ -1,8 +1,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <time.h>
 #include <unistd.h>
+
+#include <netinet/ip.h>  // IPv4
+#include <netinet/tcp.h> // TCP
+#include <netinet/udp.h> // UDP
+#include <netinet/ip6.h> // IPv6
+#include <netinet/ip_icmp.h> // ICMP for IPv4
+#include <netinet/icmp6.h> // ICMP for IPv6
+#include <netinet/if_ether.h> // ARP
+
+#include <arpa/inet.h>   // For inet_ntoa()
+#include <pthread.h>
+
+#include <pcap.h>
+#include <msgpack.h>
+#include <fcntl.h>  // For open()
 
 #include <netinet/ip.h>  // IPv4
 #include <netinet/tcp.h> // TCP
@@ -111,6 +127,287 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     packet_info.time[sizeof(packet_info.time) - 1] = '\0';
 
     switch(ntohs(eth_header->ether_type))
+    {
+        case ETHERTYPE_IP: 
+        {
+            packet_info.ethType = 0;
+            // printf("IPv4 ");
+            const struct ip *ip_header = (struct ip *)(packet + sizeof(struct ether_header)); // Skip Ethernet header (14 bytes)
+
+            // printf("Packet captured: Length = %d bytes\n", pkthdr->len);
+          
+            char src_ip[INET_ADDRSTRLEN];
+            char dest_ip[INET_ADDRSTRLEN];
+            char protocol[10] = "Other"; // Default protocol
+            int src_port = 0;
+            int dest_port = 0;
+
+            // Extract IP header information
+            inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
+
+            strncpy(packet_info.src_ip, src_ip, MAX_IP_STRLEN - 1);
+            strncpy(packet_info.dest_ip, dest_ip, MAX_IP_STRLEN - 1);
+
+            packet_info.src_ip[MAX_IP_STRLEN - 1] = '\0';
+            packet_info.dest_ip[MAX_IP_STRLEN - 1] = '\0';
+
+            switch(ip_header->ip_p)
+            {
+                case IPPROTO_TCP:
+                {                
+                    tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
+                
+                    /*
+                    printf("Protocol: TCP\n");
+                    printf("Source IP: %s\n", src_ip);
+                    printf("Destination IP: %s\n", dest_ip); 
+                    printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+                    printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+                    */
+    
+                    packet_info.src_port = ntohs(tcp_header->th_sport);
+                    packet_info.dest_port = ntohs(tcp_header->th_dport);
+    
+                    strncpy(packet_info.prot, "TCP", sizeof(packet_info.prot));
+                    packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                    break;
+                }
+
+                case IPPROTO_UDP:
+                {
+                    udp_header = (struct udphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
+
+                    /*
+                    printf("Protocol: UDP\n");
+                    printf("Source IP: %s\n", src_ip);
+                    printf("Destination IP: %s\n", dest_ip); 
+                    printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
+                    printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
+                    */
+                    
+                    packet_info.src_port = ntohs(udp_header->uh_sport);
+                    packet_info.dest_port = ntohs(udp_header->uh_dport);
+    
+                    if (packet_info.src_port == 5353 && packet_info.dest_port == 5353)
+                    {
+                        strncpy(packet_info.prot, "mDNS", sizeof(packet_info.prot));
+                        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                    }   
+    
+                    else
+                    {
+                        strncpy(packet_info.prot, "UDP", sizeof(packet_info.prot));
+                        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                    }
+                    break;
+                }
+
+                case IPPROTO_ICMP:
+                {
+                    icmp_header = (struct icmphdr *)(packet + 14 + (ip_header->ip_hl << 2));
+                    /*
+                    printf("Protocol: ICMP\n");
+                    printf("Source IP: %s\n", src_ip);
+                    printf("Destination IP: %s\n", dest_ip); 
+                    */
+
+                    packet_info.src_port = 0;
+                    packet_info.dest_port = 0;
+
+                    strncpy(packet_info.prot, "ICMP", sizeof(packet_info.prot));
+                    packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                    break;
+                }
+
+                default:
+                {                
+                    /*
+                    printf("Protocol: Other\n");
+                    printf("Source IP: %s\n", src_ip);
+                    printf("Destination IP: %s\n", dest_ip); 
+                    */
+
+                    packet_info.src_port = 0;
+                    packet_info.dest_port = 0;
+
+                    strncpy(packet_info.prot, "Other", sizeof(packet_info.prot));
+                    packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+
+                    break;
+                }
+            }            
+            break;
+        } 
+
+        case ETHERTYPE_ARP: 
+        {
+            // printf("ARP\n");
+            break;
+        }
+
+        case ETHERTYPE_IPV6: 
+        {
+            packet_info.ethType = 1;
+            // printf("IPv6 ");
+            const struct ip6_hdr *ip6_hdr = (struct ip6_hdr *)(packet + sizeof(struct ether_header));
+
+            char src_ip[INET6_ADDRSTRLEN];
+            char dest_ip[INET6_ADDRSTRLEN];
+            char protocol[10] = "Other"; // Default protocol
+            int src_port = 0;
+            int dest_port = 0;
+
+            // Extract IP header information
+            inet_ntop(AF_INET6, &(ip6_hdr->ip6_src), src_ip, MAX_IP_STRLEN);
+            inet_ntop(AF_INET6, &(ip6_hdr->ip6_dst), dest_ip, MAX_IP_STRLEN);
+
+            strncpy(packet_info.src_ip, src_ip, MAX_IP_STRLEN);
+            strncpy(packet_info.dest_ip, dest_ip, MAX_IP_STRLEN);
+
+            packet_info.src_ip[MAX_IP_STRLEN - 1] = '\0';
+            packet_info.dest_ip[MAX_IP_STRLEN - 1] = '\0';
+
+            // snprintf(packet_info.src_ip, sizeof(packet_info.src_ip), "%s", src_ip);
+            // snprintf(packet_info.dest_ip, sizeof(packet_info.dest_ip), "%s", dest_ip);
+
+            switch(ip6_hdr->ip6_nxt)
+            {
+                case IPPROTO_TCP:
+                {                
+                    tcp_header = (struct tcphdr *)(packet + sizeof(struct ether_header) + 40);
+                
+                    /*
+                    printf("Protocol: TCP\n");
+                    printf("Source IP: %s\n", src_ip);
+                    printf("Destination IP: %s\n", dest_ip); 
+                    printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+                    printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+                    */
+    
+                    packet_info.src_port = ntohs(tcp_header->th_sport);
+                    packet_info.dest_port = ntohs(tcp_header->th_dport);
+    
+                    strncpy(packet_info.prot, "TCP", sizeof(packet_info.prot));
+                    packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                    break;
+                }
+
+                case IPPROTO_UDP:
+                {
+                    udp_header = (struct udphdr *)(packet + sizeof(struct ether_header) + 40);
+
+                    /*
+                    printf("Protocol: UDP\n");
+                    printf("Source IP: %s\n", src_ip);
+                    printf("Destination IP: %s\n", dest_ip); 
+                    printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
+                    printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
+                    */
+                    
+                    packet_info.src_port = ntohs(udp_header->uh_sport);
+                    packet_info.dest_port = ntohs(udp_header->uh_dport);
+    
+                    if (packet_info.src_port == 5353 && packet_info.dest_port == 5353)
+                    {
+                        strncpy(packet_info.prot, "mDNS", sizeof(packet_info.prot));
+                        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                    }   
+    
+                    else
+                    {
+                        strncpy(packet_info.prot, "UDP", sizeof(packet_info.prot));
+                        packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                    }
+                    break;
+                }
+
+                case IPPROTO_ICMPV6:
+                {
+                    icmp_header = (struct icmphdr *)(packet + sizeof(struct ether_header) + 40);
+                    /*
+                    printf("Protocol: ICMP\n");
+                    printf("Source IP: %s\n", src_ip);
+                    printf("Destination IP: %s\n", dest_ip); 
+                    */
+
+                    packet_info.src_port = 0;
+                    packet_info.dest_port = 0;
+
+                    strncpy(packet_info.prot, "ICMP", sizeof(packet_info.prot));
+                    packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                    break;
+                }
+
+                default:
+                {                
+                    /*
+                    printf("Protocol: Other\n");
+                    printf("Source IP: %s\n", src_ip);
+                    printf("Destination IP: %s\n", dest_ip); 
+                    */
+
+                    packet_info.src_port = 0;
+                    packet_info.dest_port = 0;
+
+                    strncpy(packet_info.prot, "Other", sizeof(packet_info.prot));
+                    packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                    break;
+                }
+            }
+            break;
+        }
+    
+        default:
+        {
+            // printf("Non-IP packet\n");
+            break;
+        }
+    }
+
+    pthread_mutex_lock(&pbuf_lock);
+
+    // printf("[RECEIVED] Src=%s | Dest=%s | Protocol=%s | src_port=%d | dest_port=%d | time=%s\n", 
+    //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot, packet_info.src_port, packet_info.dest_port, packet_info.time);
+
+    /* Prevent overloading buffer array */
+    if (pbuf_active == 0)
+    {
+        packet_buffer1[pbuf_size] = packet_info;
+    }
+    else
+    {
+        packet_buffer2[pbuf_size] = packet_info;
+    }
+
+    while (data->status != 0 && data->status != 2)
+    {
+        // Wait for status = 0 to write
+    }
+
+    if (strcmp(packet_info.prot, "mDNS") != 0)
+    {
+        data->packet_info = packet_info;
+        data->status = 1;
+    }
+    
+    pbuf_size++;
+    
+    pthread_mutex_unlock(&pbuf_lock);  // Always unlock
+    
+    if (pbuf_size > 10000)
+    {
+        pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
+    }
+
+    // PRINT PACKETS TO TERMINAL
+    // printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
+    //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
+    //     packet_info.src_port, packet_info.dest_port, packet_info.time);
+    
+    // if (counter % 100 == 0)
+    //     printf("%d\n", counter);
+    // counter++;
     {
         case ETHERTYPE_IP: 
         {
@@ -387,6 +684,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
     }
 
+
     // PRINT PACKETS TO TERMINAL
     // printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
     //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
@@ -395,7 +693,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     // if (counter % 100 == 0)
     //     printf("%d\n", counter);
     // counter++;
-}
+
 
 void *pb_thread(void* args)
 {
@@ -422,10 +720,13 @@ void *pb_thread(void* args)
         char temp[4];
 
         pbuf_active = !pbuf_active;
+
         msgpack_pack_array(&pk, pbuf_size);
         for (int i = 0; i < pbuf_size; i++)
         {
             serialize_packet(&packet_buffer1[i], &pk, &sbuf);
+
+
         }
 
         pbuf_size = 0;  // Reset pbuf_size
@@ -558,10 +859,17 @@ int main()
 
     pcArg.handle = handle;
     pcT = pthread_create(&threads[0], NULL, pc_thread, &pcArg);
+
     pbT = pthread_create(&threads[1], NULL, pb_thread, NULL);
 
     pthread_join(threads[0], NULL);
     pthread_join(threads[1], NULL);
+
+    pbT = pthread_create(&threads[1], NULL, pb_thread, NULL);
+
+    pthread_join(threads[0], NULL);
+    pthread_join(threads[1], NULL);
+
 
     pcap_close(handle);
     return 0;

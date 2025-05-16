@@ -5,7 +5,9 @@ export default function PacketWindow() {
   const tableRef = useRef(null);
 
   useEffect(() => {
+
     const socket = new WebSocket('ws://10.0.0.100:8081');
+
     
     socket.onopen = () => console.log("WebSocket: connected");
     socket.onmessage = (event) => {
