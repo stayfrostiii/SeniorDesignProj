@@ -19,7 +19,6 @@ last_processed_time = 0
 blacklist = set()  # Use a set for faster lookups and to avoid duplicates
 rules = []
 @app.route("/data", methods=['GET'])
-@app.route("/data", methods=['GET'])
 def get_data():
  
     global current_file_index, last_processed_time
@@ -28,7 +27,7 @@ def get_data():
         print("\n==== DEBUG: /data endpoint called ====")
         
         # Define path to logs directory
-        logs_dir = "/home/jeremy/Desktop/SeniorDesignProj/src/logs"
+        logs_dir = "/home/sdp/firewall/logs"
         print(f"DEBUG: Looking for msgpack files in: {logs_dir}")
         
         # Check if directory exists
@@ -255,8 +254,14 @@ def add_to_blacklist():
             return jsonify({"error": f"General rule already exists for IP {ip}. Remove it before adding to blacklist."}), 400
 
     try:
-        # Run the Linux command to blacklist the IP
+        # Run the Linux command to blacklist the IP as source/destination
         command = f"sudo nft add rule bridge filter forward ip saddr {ip} drop"
+        subprocess.run(command, shell=True, check=True)
+        command = f"sudo nft add rule bridge filter forward ip daddr {ip} drop"
+        subprocess.run(command, shell=True, check=True)
+
+        # Update nftables.conf to make nftable changes persistent
+        command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
         subprocess.run(command, shell=True, check=True)
 
         app.logger.info(f"IP {ip} added to blacklist via nftables.")
@@ -291,7 +296,7 @@ def remove_from_blacklist():
         result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         # Parse the output to find the rule handle
-        rule_handle = None
+        rule_handleS = None
         for line in result.stdout.splitlines():
             if f"ip saddr {ip} drop" in line:
                 parts = line.split()
@@ -299,15 +304,19 @@ def remove_from_blacklist():
                 if "handle" in parts:
                     handle_index = parts.index("handle") + 1
                     if handle_index < len(parts) and parts[handle_index].isdigit():
-                        rule_handle = parts[handle_index]
+                        rule_handleS = parts[handle_index]
                         break
 
-        if not rule_handle:
+        if not rule_handleS:
             app.logger.error(f"Rule for IP {ip} not found in nftables.")
             return jsonify({"error": "IP address not found in blacklist"}), 404
 
         # Delete the rule using the handle
-        command = f"sudo nft delete rule bridge filter forward handle {rule_handle}"
+        command = f"sudo nft delete rule bridge filter forward handle {rule_handleS}"
+        subprocess.run(command, shell=True, check=True)
+
+        # Update nftables.conf to make nftable changes persistent
+        command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
         subprocess.run(command, shell=True, check=True)
 
         app.logger.info(f"IP {ip} removed from blacklist via nftables.")
@@ -376,6 +385,10 @@ def add_rule():
         command += f" {data['action']}"  # Add the terminal action (e.g., drop, accept)
         subprocess.run(command, shell=True, check=True)
 
+        # Update nftables.conf to make nftable changes persistent
+        command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
+        subprocess.run(command, shell=True, check=True)
+
         # Retrieve the handle of the newly added rule
         list_command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(list_command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -433,6 +446,10 @@ def delete_rule(rule_id):
         # Delete the rule using the handle
         delete_command = f"sudo nft delete rule bridge filter forward handle {rule_handle}"
         subprocess.run(delete_command, shell=True, check=True)
+
+        # Update nftables.conf to make nftable changes persistent
+        command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
+        subprocess.run(command, shell=True, check=True)
 
         app.logger.info(f"Rule with handle {rule_handle} deleted from nftables.")
         return jsonify({"message": f"Rule with handle {rule_handle} deleted successfully."}), 200

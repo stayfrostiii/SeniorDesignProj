@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "stdio.h": "c",
-        "*.gitattributes": "c"
+        "*.gitattributes": "c",
+        "stdint.h": "c"
     }
 }
