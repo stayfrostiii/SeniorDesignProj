@@ -423,7 +423,7 @@ void *pb_thread(void* args)
         pthread_mutex_lock(&pbuf_lock);
 
         // Wait until the condition is met (pbuf_size > 10000)
-        while (pbuf_size <= 1000)
+        while (pbuf_size <= 10000)
         {
             pthread_cond_wait(&pbuf_cond, &pbuf_lock);
         }
@@ -436,12 +436,9 @@ void *pb_thread(void* args)
 
         pbuf_active = !pbuf_active;
 
-        msgpack_pack_array(&pk, pbuf_size);
         for (int i = 0; i < pbuf_size; i++)
         {
             serialize_packet(&packet_buffer1[i], &pk, &sbuf);
-
-
         }
 
         pbuf_size = 0;  // Reset pbuf_size
