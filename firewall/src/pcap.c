@@ -246,14 +246,14 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             inet_ntop(AF_INET6, &(ip6_hdr->ip6_src), src_ip, MAX_IP_STRLEN);
             inet_ntop(AF_INET6, &(ip6_hdr->ip6_dst), dest_ip, MAX_IP_STRLEN);
 
-            // strncpy(packet_info.src_ip, src_ip, INET6_ADDRSTRLEN);
-            // strncpy(packet_info.dest_ip, dest_ip, INET6_ADDRSTRLEN);
+            strncpy(packet_info.src_ip, src_ip, MAX_IP_STRLEN);
+            strncpy(packet_info.dest_ip, dest_ip, MAX_IP_STRLEN);
 
-            // packet_info.src_ip[INET6_ADDRSTRLEN - 1] = '\0';
-            // packet_info.dest_ip[INET6_ADDRSTRLEN - 1] = '\0';
+            packet_info.src_ip[MAX_IP_STRLEN - 1] = '\0';
+            packet_info.dest_ip[MAX_IP_STRLEN - 1] = '\0';
 
-            snprintf(packet_info.src_ip, sizeof(packet_info.src_ip), "%s", src_ip);
-            snprintf(packet_info.dest_ip, sizeof(packet_info.dest_ip), "%s", dest_ip);
+            // snprintf(packet_info.src_ip, sizeof(packet_info.src_ip), "%s", src_ip);
+            // snprintf(packet_info.dest_ip, sizeof(packet_info.dest_ip), "%s", dest_ip);
 
             switch(ip6_hdr->ip6_nxt)
             {
