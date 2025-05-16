@@ -9,7 +9,7 @@ SHM_NAME = "/my_shm"
 SHM_SIZE = 1024
 
 # Define struct format
-smdata_fmt = 'i46s46s10sii26s'
+smdata_fmt = 'i46s46s10sii26si'
 smdata_size = struct.calcsize(smdata_fmt)
 
 print("Python listener started, waiting for packets...\n")
@@ -94,11 +94,19 @@ try:
         # Read entire smData struct
         mapfile.seek(0)
         data = mapfile.read(smdata_size)
-        status, src_ip, dest_ip, prot, src_port, dest_port, time = struct.unpack(smdata_fmt, data)
+        status, src_ip, dest_ip, prot, src_port, dest_port, time, ethType = struct.unpack(smdata_fmt, data)
+
+        # ethType = IPv4
+        if ethType == 0:
+            src_ip = src_ip.decode('utf-8', errors='replace')[:16].rstrip('\x00')
+            dest_ip = dest_ip.decode('utf-8', errors='replace')[:16].rstrip('\x00')
+
+        # ethType = IPv6
+        elif ethType == 1:
+            src_ip = src_ip.decode('utf-8', errors='replace').rstrip('\x00')
+            dest_ip = dest_ip.decode('utf-8', errors='replace').rstrip('\x00')
 
         # Decode byte strings
-        src_ip = src_ip.decode('utf-8', errors='replace').rstrip('\x00')
-        dest_ip = dest_ip.decode('utf-8', errors='replace').rstrip('\x00')
         prot = prot.decode('utf-8', errors='replace').rstrip('\x00')
         time = time.decode('utf-8', errors='replace').rstrip('\x00')
         
@@ -112,7 +120,7 @@ try:
         }
         
         # Display received packet info
-        print(f"[RECEIVED] Status={status} | Src={src_ip} | Dest={dest_ip} | Protocol={prot} | src_port={src_port} | dest_port={dest_port} | time={time}")
+        print(f"[RECEIVED] Src={src_ip} | Dest={dest_ip} | Protocol={prot} | src_port={src_port} | dest_port={dest_port} | time={time} | ethType={ethType}")
 
         # Reset status to 0 (ready for next)
         mapfile.seek(0)
