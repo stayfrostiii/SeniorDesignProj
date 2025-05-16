@@ -28,10 +28,6 @@ int counter = 0;
 int mDNSFilter = 0;
 
 // Multithread stuff
-pthread_mutex_t lock;
-pthread_cond_t cond;
-int pauseCap = 0;
-
 pthread_mutex_t pbuf_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t pbuf_cond = PTHREAD_COND_INITIALIZER;
 
@@ -90,7 +86,7 @@ void serialize_packet(Packet *p, msgpack_packer *pk, msgpack_sbuffer *sbuf)
     msgpack_pack_str(pk, strlen(p->prot));
     msgpack_pack_str_body(pk, p->prot, strlen(p->prot));
 
-    // protocol
+    // time
     msgpack_pack_str(pk, strlen("time"));
     msgpack_pack_str_body(pk, "time", strlen("time"));
     msgpack_pack_str(pk, strlen(p->time));
@@ -207,39 +203,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             strncpy(packet_info.prot, "Other", sizeof(packet_info.prot));
             packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
         }
-        /*
-        if (payload && payload_length > 0) 
-        {
-
-            // Use nDPI to detect the protocol
-            struct ndpi_flow_struct flow;
-            memset(&flow, 0, sizeof(flow));
-
-            // Process the packet and get the detected protocol
-            ndpi_protocol detected_protocol = ndpi_detection_process_packet(ndpi_module, &flow, payload, payload_length, time(NULL), NULL);
-
-            // Get the protocol ID from the detected_protocol struct
-            u_int16_t protocol_id = ndpi_get_lower_proto(detected_protocol);
-
-            // Get the protocol name using the protocol ID
-            const char *protocol_name = ndpi_get_proto_name(ndpi_module, protocol_id);
-
-            printf("Detected protocol: %s\n", protocol_name);
-
-            // Detect malicious traffic
-            if (strcmp(protocol_name, "Malware") == 0) 
-            {
-                printf("Warning: Malicious traffic detected from %s to %s\n", src_ip, dest_ip);
-            }
-
-            // Detect potential intrusion (e.g., large payloads)
-            if (payload_length > 10000) 
-            { 
-                printf("Potential intrusion detected: Large payload size (%d bytes) from %s to %s\n", payload_length, src_ip, dest_ip);
-            }
-        }
-        printf("-----------------------------\n");
-    */
+        
         pthread_mutex_lock(&pbuf_lock);
 
         // printf("[RECEIVED] Src=%s | Dest=%s | Protocol=%s | src_port=%d | dest_port=%d | time=%s\n", 
@@ -276,9 +240,9 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
         //     packet_info.src_port, packet_info.dest_port, packet_info.time);
 
-        if (counter % 1000 == 0)
-            printf("%d\n", counter);
-        counter++;
+        // if (counter % 1000 == 0)
+        //     printf("%d\n", counter);
+        // counter++;
     } 
     
     else 
@@ -312,6 +276,7 @@ void *pb_thread(void* args)
         char temp[4];
 
         pbuf_active = !pbuf_active;
+        msgpack_pack_array(&pk, pbuf_size);
         for (int i = 0; i < pbuf_size; i++)
         {
             serialize_packet(&packet_buffer1[i], &pk, &sbuf);
@@ -365,20 +330,6 @@ void* pc_thread(void* args)
 
     while(1)
     {
-        pthread_mutex_lock(&lock);
-
-        // If user input, pauseCap = 1
-        if (pauseCap)
-        {
-            pthread_mutex_unlock(&lock);
-
-            while(pauseCap) {};
-
-            pthread_mutex_lock(&lock);
-        }
-
-        pthread_mutex_unlock(&lock);
-
         // Capture packets here
         if (pcap_loop(args_f->handle, 1, packet_handler, (u_char *)ptr) < 0) 
         {
@@ -398,7 +349,7 @@ int main()
 {
     // Getting device
     pcap_if_t *allDevs;
-    pcap_if_t dev;
+    pcap_if_t *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
 
     // Starting packet capture sesh
@@ -444,7 +395,7 @@ int main()
     }
      
     /* Take the first device */
-    dev = *allDevs;
+    dev = allDevs;
     printf("%s\n", dev.name);
 
     /* Open capturing sesh */
@@ -458,9 +409,10 @@ int main()
     pcap_freealldevs(allDevs);
 
     /* -------------------------------- */
-    pcap_set_snaplen(handle, 65536);              // Max bytes per packet
-    pcap_set_promisc(handle, 1);                  // Promiscuous mode
-    pcap_set_timeout(handle, 1000);               // 1 second timeout    
+    pcap_set_snaplen(handle, 65536);                // Max bytes per packet
+    pcap_set_promisc(handle, 1);                    // Promiscuous mode
+    pcap_set_timeout(handle, 500);                  // 0.5 second timeout  
+    pcap_set_buffer_size(handle, 8 * 1024 * 1024);  // 8 MB buffer  
     /* -------------------------------- */
 
     activate = pcap_activate(handle);
