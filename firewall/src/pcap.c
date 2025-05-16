@@ -524,12 +524,12 @@ int main()
     int activate;
 
     // Thread stuff
-    pthread_t threads[3];
+    pthread_t threads[2];
 
     // Threads for Pipe
     pthread_t pipeT;
 
-    int pcT, uiT, pbT;
+    int pcT, pbT;
     pc_args pcArg;
 
     /* Finds all devices */
@@ -579,17 +579,13 @@ int main()
 
     pcArg.handle = handle;
     pcT = pthread_create(&threads[0], NULL, pc_thread, &pcArg);
-
     pbT = pthread_create(&threads[1], NULL, pb_thread, NULL);
 
     pthread_join(threads[0], NULL);
     pthread_join(threads[1], NULL);
 
-    pbT = pthread_create(&threads[1], NULL, pb_thread, NULL);
-
     pthread_join(threads[0], NULL);
     pthread_join(threads[1], NULL);
-
 
     pcap_close(handle);
     return 0;
