@@ -76,12 +76,12 @@ export default function PacketWindow() {
           <tbody>
             {packets.map((packet, index) => (
               <tr key={index}>
-                <td style={cellStyle}>{packet.time}</td>
-                <td style={cellStyle}>{packet.src_ip}</td>
-                <td style={cellStyle}>{packet.dest_ip}</td>
-                <td style={cellStyle}>{packet.prot}</td>
-                <td style={cellStyle}>{packet.src_port}</td>
-                <td style={cellStyle}>{packet.dest_port}</td>
+                <td style={{ border: "1px solid #333" }}>{packet.time}</td>
+                <td style={{ border: "1px solid #333" }}>{packet.src_ip}</td>
+                <td style={{ border: "1px solid #333" }}>{packet.dest_ip}</td>
+                <td style={{ border: "1px solid #333" }}>{packet.prot}</td>
+                <td style={{ border: "1px solid #333" }}>{packet.src_port}</td>
+                <td style={{ border: "1px solid #333" }}>{packet.dest_port}</td>
               </tr>
             ))}
           </tbody>
