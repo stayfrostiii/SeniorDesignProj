@@ -4,13 +4,209 @@ import ipaddress
 import subprocess
 import json
 from uuid import uuid4
+import os
+import msgpack
+import time
+import glob
+from datetime import datetime
+from collections import defaultdict
 
 app = Flask(__name__)
 cors = CORS(app, origins='*')
-
+current_file_index = 0
+last_processed_time = 0
 # In-memory storage for the blacklist and rules
 blacklist = set()  # Use a set for faster lookups and to avoid duplicates
 rules = []
+@app.route("/data", methods=['GET'])
+@app.route("/data", methods=['GET'])
+def get_data():
+ 
+    global current_file_index, last_processed_time
+    
+    try:
+        print("\n==== DEBUG: /data endpoint called ====")
+        
+        # Define path to logs directory
+        logs_dir = "/home/jeremy/Desktop/SeniorDesignProj/src/logs"
+        print(f"DEBUG: Looking for msgpack files in: {logs_dir}")
+        
+        # Check if directory exists
+        if not os.path.exists(logs_dir):
+            print(f"DEBUG: Directory does not exist: {logs_dir}")
+            return jsonify({"error": f"Logs directory not found: {logs_dir}"})
+        
+        # List all msgpack files in directory
+        all_msgpack_files = glob.glob(os.path.join(logs_dir, "packets*.msgpack"))
+        print(f"DEBUG: Found {len(all_msgpack_files)} msgpack files: {all_msgpack_files}")
+        
+        # Look for the next file in sequence
+        file_name = f"packets{current_file_index:02d}.msgpack"
+        file_path = os.path.join(logs_dir, file_name)
+        print(f"DEBUG: Attempting to read file: {file_path}")
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            print(f"DEBUG: File not found: {file_path}")
+            
+            # Reset to file 00 or try to find any available file
+            if all_msgpack_files:
+                print(f"DEBUG: Resetting to available files")
+                # Sort files to get the lowest numbered one
+                all_msgpack_files.sort()
+                file_path = all_msgpack_files[0]
+                file_name = os.path.basename(file_path)
+                current_file_index = int(file_name[7:9])  # Extract index from filename
+                print(f"DEBUG: Reset to file: {file_name}, index: {current_file_index}")
+            else:
+                print("DEBUG: No msgpack files found, returning dummy data")
+                return jsonify({
+                    "performanceMetrics": {
+                        "totalPackets": 0,
+                        "avgProcessingTime": 0,
+                        "dropRate": 0
+                    },
+                    "trafficVolume": {
+                        "time": datetime.now().strftime("%H:%M:%S"),
+                        "count": 0
+                    },
+                    "topTalkers": {
+                        "sourceIPs": [],
+                        "destinationIPs": []
+                    },
+                    "currentFile": "No files found",
+                    "debug": "No msgpack files found in directory"
+                })
+        
+        # Read the msgpack file
+        print(f"DEBUG: Reading file: {file_path}")
+        file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
+        print(f"DEBUG: File size: {file_size} bytes")
+        
+        with open(file_path, 'rb') as f:
+            try:
+                # Raw file data
+                file_data = f.read()
+                
+                # Check if file is empty
+                if not file_data:
+                    print("DEBUG: File is empty")
+                    current_file_index = (current_file_index + 1) % 10
+                    return jsonify({
+                        "error": "Empty file",
+                        "currentFile": file_name,
+                        "debug": "File exists but is empty"
+                    })
+                
+                print(f"DEBUG: Read {len(file_data)} bytes of data")
+                
+                # Unpack the msgpack data
+                unpacker = msgpack.Unpacker(raw=False)
+                unpacker.feed(file_data)
+                
+                # Process packets
+                packets = list(unpacker)
+                total_packets = len(packets)
+                print(f"DEBUG: Unpacked {total_packets} packets")
+                
+                # Print a sample packet to understand structure
+                if packets and total_packets > 0:
+                    print(f"DEBUG: Sample packet structure: {packets[0]}")
+                
+                # Group packets by protocol
+                protocol_counts = defaultdict(int)
+                
+                # IP address counts for top talkers
+                src_ip_counts = defaultdict(int)
+                dst_ip_counts = defaultdict(int)
+                
+                # Process packet data
+                for packet in packets:
+                    print(f"DEBUG: Processing packet: {packet}")
+                    if isinstance(packet, dict):
+                        # Count protocols
+                        if "protocol" in packet:
+                            protocol_counts[packet["protocol"]] += 1
+                        
+                        # Count IP addresses
+                        if "src_ip" in packet:
+                            src_ip_counts[packet["src_ip"]] += 1
+                        
+                        if "dst_ip" in packet:
+                            dst_ip_counts[packet["dst_ip"]] += 1
+                
+                print(f"DEBUG: Protocol counts: {dict(protocol_counts)}")
+                print(f"DEBUG: Source IP counts: {dict(src_ip_counts)}")
+                print(f"DEBUG: Destination IP counts: {dict(dst_ip_counts)}")
+                
+                # Format current time for the traffic volume chart
+                current_time = datetime.now().strftime("%H:%M:%S")
+                
+                # Get top talkers
+                top_source_ips = [{"ip": ip, "count": count} 
+                                for ip, count in sorted(
+                                    src_ip_counts.items(), 
+                                    key=lambda x: x[1], 
+                                    reverse=True
+                                )[:5]]
+                
+                top_dest_ips = [{"ip": ip, "count": count} 
+                               for ip, count in sorted(
+                                   dst_ip_counts.items(), 
+                                   key=lambda x: x[1], 
+                                   reverse=True
+                               )[:5]]
+                
+                # Increment the file counter for next request
+                current_file_index = (current_file_index + 1) % 10
+                print(f"DEBUG: Next file index will be: {current_file_index}")
+                
+                # Prepare response data
+                response_data = {
+                    "performanceMetrics": {
+                        "totalPackets": total_packets,
+                        "avgProcessingTime": round(2.5 + (current_file_index % 3), 2),  # simulated processing time
+                        "dropRate": round((total_packets % 7) * 0.1, 2)  # simulated drop rate
+                    },
+                    "trafficVolume": {
+                        "time": current_time,
+                        "count": total_packets
+                    },
+                    "topTalkers": {
+                        "sourceIPs": top_source_ips,
+                        "destinationIPs": top_dest_ips
+                    },
+                    "currentFile": file_name,
+                    "debug": {
+                        "processedPackets": total_packets,
+                        "protocols": dict(protocol_counts),
+                        "fileSize": file_size
+                    }
+                }
+                
+                print(f"DEBUG: Sending response: {response_data}")
+                return jsonify(response_data)
+                
+            except Exception as e:
+                print(f"DEBUG: Error processing file {file_path}: {str(e)}")
+                current_file_index = (current_file_index + 1) % 10
+                return jsonify({
+                    "error": f"Error processing file: {str(e)}",
+                    "currentFile": file_name,
+                    "debug": {
+                        "exception": str(e),
+                        "file": file_path
+                    }
+                })
+    
+    except Exception as e:
+        print(f"DEBUG: Unexpected error: {str(e)}")
+        return jsonify({
+            "error": f"Unexpected error: {str(e)}",
+            "debug": {
+                "exception": str(e)
+            }
+        })
 
 @app.route("/get-blacklist", methods=["GET"])
 def get_blacklist():
