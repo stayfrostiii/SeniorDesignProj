@@ -91,97 +91,99 @@ export default function Analyze() {
       )}
 
       {/* Performance Metrics */}
-      <div className="grid-item">
-        <h2>Performance Metrics</h2>
-        <div style={{ display: "flex", justifyContent: "space-around", marginTop: "20px" }}>
-          <div>
-            <h3>Total Packets</h3>
-            <p>{performanceMetrics.totalPackets}</p>
-          </div>
-          <div>
-            <h3>Avg Processing Time</h3>
-            <p>{performanceMetrics.avgProcessingTime} ms</p>
-          </div>
-          <div>
-            <h3>Drop Rate</h3>
-            <p>{performanceMetrics.dropRate}%</p>
+      <div style={{ width: "100%"}}>
+        <div className="grid-item">
+          <h2>Performance Metrics</h2>
+          <div style={{ display: "flex", justifyContent: "space-around", marginTop: "20px" }}>
+            <div>
+              <h3>Total Packets</h3>
+              <p>{performanceMetrics.totalPackets}</p>
+            </div>
+            <div>
+              <h3>Avg Processing Time</h3>
+              <p>{performanceMetrics.avgProcessingTime} ms</p>
+            </div>
+            <div>
+              <h3>Drop Rate</h3>
+              <p>{performanceMetrics.dropRate}%</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Traffic Volume Analysis */}
-      <div className="grid-item">
-        <h2>Traffic Volume Over Time</h2>
-        {(() => {
-          const gridItemWidth = document.querySelector(".grid-item")?.offsetWidth || 700;
-          const lineChartWidth = gridItemWidth * 0.9;
-          return (
-            <LineChart
-              width={lineChartWidth}
-              height={300}
-              data={trafficVolume}
-              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="time"
-                label={{ value: "Time (HH:MM:SS)", position: "insideBottom", offset: -5 }}
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis label={{ value: "Packets", angle: -90, position: "insideLeft" }} />
+        {/* Traffic Volume Analysis */}
+        <div className="grid-item">
+          <h2>Traffic Volume Over Time</h2>
+          {(() => {
+            const gridItemWidth = document.querySelector(".grid-item")?.offsetWidth || 700;
+            const lineChartWidth = gridItemWidth * 0.9;
+            return (
+              <LineChart
+                width={lineChartWidth}
+                height={300}
+                data={trafficVolume}
+                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="time"
+                  label={{ value: "Time (HH:MM:SS)", position: "insideBottom", offset: -5 }}
+                  tick={{ fontSize: 12 }}
+                />
+                <YAxis label={{ value: "Packets", angle: -90, position: "insideLeft" }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="count" stroke="#8884d8" activeDot={{ r: 8 }} />
+              </LineChart>
+            );
+          })()}
+        </div>
+
+        {/* Top Talkers (Source IPs) */}
+        <div className="grid-item">
+          <h2>Top Talkers (Source IPs)</h2>
+          {(() => {
+            const gridItemWidth = document.querySelector(".grid-item")?.offsetWidth || 700;
+            const barChartWidth = gridItemWidth * 0.9;
+            return (
+              <BarChart
+                width={barChartWidth}
+                height={300}
+                data={topTalkers.sourceIPs}
+                margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="ip" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="count" fill="#82ca9d" />
+              </BarChart>
+            );
+          })()}
+        </div>
+
+        {/* Top Talkers (Destination IPs) */}
+        <div className="grid-item" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <div>
+            <h2 style={{ textAlign: "center" }}>Top Talkers (Destination IPs)</h2>
+            <PieChart width={400} height={300}>
+              <Pie
+                data={topTalkers.destinationIPs}
+                dataKey="count"
+                nameKey="ip"
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                fill="#8884d8"
+                label
+              >
+                {topTalkers.destinationIPs.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={["#0088FE", "#00C49F", "#FFBB28", "#FF8042"][index % 4]} />
+                ))}
+              </Pie>
               <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="count" stroke="#8884d8" activeDot={{ r: 8 }} />
-            </LineChart>
-          );
-        })()}
-      </div>
-
-      {/* Top Talkers (Source IPs) */}
-      <div className="grid-item">
-        <h2>Top Talkers (Source IPs)</h2>
-        {(() => {
-          const gridItemWidth = document.querySelector(".grid-item")?.offsetWidth || 700;
-          const barChartWidth = gridItemWidth * 0.9;
-          return (
-            <BarChart
-              width={barChartWidth}
-              height={300}
-              data={topTalkers.sourceIPs}
-              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="ip" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="count" fill="#82ca9d" />
-            </BarChart>
-          );
-        })()}
-      </div>
-
-      {/* Top Talkers (Destination IPs) */}
-      <div className="grid-item" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-        <div>
-          <h2 style={{ textAlign: "center" }}>Top Talkers (Destination IPs)</h2>
-          <PieChart width={400} height={300}>
-            <Pie
-              data={topTalkers.destinationIPs}
-              dataKey="count"
-              nameKey="ip"
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              fill="#8884d8"
-              label
-            >
-              {topTalkers.destinationIPs.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={["#0088FE", "#00C49F", "#FFBB28", "#FF8042"][index % 4]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
+            </PieChart>
+          </div>
         </div>
       </div>
     </div>
