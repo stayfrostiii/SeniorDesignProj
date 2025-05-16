@@ -3,62 +3,38 @@ import React, { useState, useEffect, useRef } from "react";
 export default function PacketWindow() {
   const [packets, setPackets] = useState([]);
   const tableRef = useRef(null);
-  const socketRef = useRef(null);
-  const reconnectTimer = useRef(null);
 
   useEffect(() => {
-    function connect() {
-      const socket = new WebSocket('ws://10.0.0.100:8081');
-      socketRef.current = socket;
+    const socket = new WebSocket('ws://10.0.0.100:8081');
+    
+    socket.onopen = () => console.log("WebSocket: connected");
+    socket.onmessage = (event) => {
+      const packet = JSON.parse(event.data);
 
-      socket.onopen = () => {
-        console.log("WebSocket connected");
-        if (reconnectTimer.current) {
-          clearTimeout(reconnectTimer.current);
-          reconnectTimer.current = null;
+      // Add the new packet to the top of the list
+      setPackets((prevPackets) => {
+        const updatedPackets = [packet, ...prevPackets]; // Add new packet at the top
+        if (updatedPackets.length > 21) {
+          updatedPackets.pop(); // Remove the last packet if the list exceeds 50
         }
-      };
-      
-      socket.onmessage = (event) => {
-        const packet = JSON.parse(event.data);
+        return updatedPackets;
+      });
 
-        // Add the new packet to the top of the list
-        setPackets((prevPackets) => {
-          const updatedPackets = [packet, ...prevPackets]; // Add new packet at the top
-          if (updatedPackets.length > 21) {
-            updatedPackets.pop(); // Remove the last packet if the list exceeds 50
-          }
-          return updatedPackets;
-        });
+      // Scroll to the top of the table for smooth updates (optional)
+      if (tableRef.current) {
+        tableRef.current.scrollTop = 0;
+      }
+    };
 
-        // Scroll to the top of the table for smooth updates (optional)
-        if (tableRef.current) {
-          tableRef.current.scrollTop = 0;
-        }
-      };
-
-      socket.onerror = (error) => {
-        console.error('WebSocket error event:', error);
-        alert("WebSocket connection error");
-      };
-
-      socket.onclose = (event) => {
-        console.warn(`WebSocket closed: ${event.reason} - reconnecting in 2s`);
-        reconnectTimer.current = setTimeout(() => {
-          connect();
-        }, 2000); // try reconnecting every 2 seconds
-      };
-    }
-
-    connect();
+    socket.onerror = (e) => {
+      console.error("WebSocket: error", e);
+    };
+    socket.onclose = (e) => {
+      console.warn("WebSocket: closed", e);
+    };
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
-      if (reconnectTimer.current) {
-        clearTimeout(reconnectTimer.current);
-      }
+      socket.close();
     };
   }, []);
 
