@@ -104,151 +104,165 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     struct udphdr *udp_header;
     struct icmphdr *icmp_header;
 
-    if (ntohs(eth_header->ether_type) == ETHERTYPE_IP) {
-        const struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
-
-        // printf("Packet captured: Length = %d bytes\n", pkthdr->len);
-
-        char src_ip[INET_ADDRSTRLEN], dest_ip[INET_ADDRSTRLEN];
-        char protocol[10] = "Other"; // Default protocol
-        int src_port = 0, dest_port = 0;
-
-        time_t now = time(NULL);
-        strncpy(packet_info.time, ctime(&now), sizeof(packet_info.time));
-        packet_info.time[sizeof(packet_info.time) - 1] = '\0';
-
-        // Extract IP header information
-        inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
-        inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
-
-        strncpy(packet_info.src_ip, src_ip, INET_ADDRSTRLEN);
-        strncpy(packet_info.dest_ip, dest_ip, INET_ADDRSTRLEN);
-
-        packet_info.src_ip[INET_ADDRSTRLEN - 1] = '\0';
-        packet_info.dest_ip[INET_ADDRSTRLEN - 1] = '\0';
-
-        // Check the protocol type 
-        if (ip_header->ip_p == IPPROTO_TCP) 
+    switch(ntohs(eth_header->ether_type))
+    {
+        case ETHERTYPE_IP: 
         {
-            tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
-            
-            // printf("Protocol: TCP\n");
-            // printf("Source IP: %s\n", src_ip);
-            // printf("Destination IP: %s\n", dest_ip); 
-            // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
-            // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+            const struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
 
-            packet_info.src_port = ntohs(tcp_header->th_sport);
-            packet_info.dest_port = ntohs(tcp_header->th_dport);
+            // printf("Packet captured: Length = %d bytes\n", pkthdr->len);
 
-            strncpy(packet_info.prot, "TCP", sizeof(packet_info.prot));
-            packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
-        } 
-        
-        else if (ip_header->ip_p == IPPROTO_UDP) 
-        {
-            udp_header = (struct udphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
+            char src_ip[INET_ADDRSTRLEN], dest_ip[INET_ADDRSTRLEN];
+            char protocol[10] = "Other"; // Default protocol
+            int src_port = 0, dest_port = 0;
 
-            // printf("Protocol: UDP\n");
-            // printf("Source IP: %s\n", src_ip);
-            // printf("Destination IP: %s\n", dest_ip); 
+            time_t now = time(NULL);
+            strncpy(packet_info.time, ctime(&now), sizeof(packet_info.time));
+            packet_info.time[sizeof(packet_info.time) - 1] = '\0';
 
-            /*
-            printf("Protocol: UDP\n");
-            */
-            // printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
-            // printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
-            
-            packet_info.src_port = ntohs(udp_header->uh_sport);
-            packet_info.dest_port = ntohs(udp_header->uh_dport);
+            // Extract IP header information
+            inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
 
-            if (packet_info.src_port == 5353 && packet_info.dest_port == 5353)
+            strncpy(packet_info.src_ip, src_ip, INET_ADDRSTRLEN);
+            strncpy(packet_info.dest_ip, dest_ip, INET_ADDRSTRLEN);
+
+            packet_info.src_ip[INET_ADDRSTRLEN - 1] = '\0';
+            packet_info.dest_ip[INET_ADDRSTRLEN - 1] = '\0';
+
+            // Check the protocol type 
+            if (ip_header->ip_p == IPPROTO_TCP) 
             {
-                strncpy(packet_info.prot, "mDNS", sizeof(packet_info.prot));
+                tcp_header = (struct tcphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
+                
+                // printf("Protocol: TCP\n");
+                // printf("Source IP: %s\n", src_ip);
+                // printf("Destination IP: %s\n", dest_ip); 
+                // printf("Source Port: %d\n", ntohs(tcp_header->th_sport));
+                // printf("Destination Port: %d\n", ntohs(tcp_header->th_dport)); 
+
+                packet_info.src_port = ntohs(tcp_header->th_sport);
+                packet_info.dest_port = ntohs(tcp_header->th_dport);
+
+                strncpy(packet_info.prot, "TCP", sizeof(packet_info.prot));
                 packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
-            }   
-
-            else
+            } 
+            
+            else if (ip_header->ip_p == IPPROTO_UDP) 
             {
-                strncpy(packet_info.prot, "UDP", sizeof(packet_info.prot));
+                udp_header = (struct udphdr *)(packet + 14 + (ip_header->ip_hl << 2)); // Skip IP header
+
+                // printf("Protocol: UDP\n");
+                // printf("Source IP: %s\n", src_ip);
+                // printf("Destination IP: %s\n", dest_ip); 
+
+                /*
+                printf("Protocol: UDP\n");
+                */
+                // printf("Source Port: %d\n", ntohs(udp_header->uh_sport));
+                // printf("Destination Port: %d\n", ntohs(udp_header->uh_dport));
+                
+                packet_info.src_port = ntohs(udp_header->uh_sport);
+                packet_info.dest_port = ntohs(udp_header->uh_dport);
+
+                if (packet_info.src_port == 5353 && packet_info.dest_port == 5353)
+                {
+                    strncpy(packet_info.prot, "mDNS", sizeof(packet_info.prot));
+                    packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                }   
+
+                else
+                {
+                    strncpy(packet_info.prot, "UDP", sizeof(packet_info.prot));
+                    packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+                }
+            } 
+            
+            else if (ip_header->ip_p == IPPROTO_ICMP) 
+            {
+                icmp_header = (struct icmphdr *)(packet + 14 + (ip_header->ip_hl << 2));
+                // printf("Protocol: ICMP\n");
+                // printf("Source IP: %s\n", src_ip);
+                // printf("Destination IP: %s\n", dest_ip); 
+
+                packet_info.src_port = 0;
+                packet_info.dest_port = 0;
+
+                strncpy(packet_info.prot, "ICMP", sizeof(packet_info.prot));
                 packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
             }
+
+            else 
+            {
+                // printf("Protocol: Other\n");
+
+                // printf("Protocol: Other\n");
+                // printf("Source IP: %s\n", src_ip);
+                // printf("Destination IP: %s\n", dest_ip); 
+
+                packet_info.src_port = 0;
+                packet_info.dest_port = 0;
+
+                strncpy(packet_info.prot, "Other", sizeof(packet_info.prot));
+                packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+            }
+            
+            pthread_mutex_lock(&pbuf_lock);
+
+            // printf("[RECEIVED] Src=%s | Dest=%s | Protocol=%s | src_port=%d | dest_port=%d | time=%s\n", 
+            //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot, packet_info.src_port, packet_info.dest_port, packet_info.time);
+
+            /* Prevent overloading buffer array */
+            if (pbuf_active == 0)
+            {
+                packet_buffer1[pbuf_size] = packet_info;
+            }
+            else
+            {
+                packet_buffer2[pbuf_size] = packet_info;
+            }
+
+            // while (data->status != 0 && data->status != 2)
+            // {
+            //     // Wait for status = 1 to write
+            // }
+
+            // data->packet_info = packet_info;
+            // data->status = 1;
+            
+            pbuf_size++;
+            
+            pthread_mutex_unlock(&pbuf_lock);  // Always unlock
+            
+            if (pbuf_size > 10000)
+            {
+                pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
+            }
+
+            printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
+                packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
+                packet_info.src_port, packet_info.dest_port, packet_info.time);
         } 
-        
-        else if (ip_header->ip_p == IPPROTO_ICMP) 
+
+        case ETHERTYPE_ARP: 
         {
-            icmp_header = (struct icmphdr *)(packet + 14 + (ip_header->ip_hl << 2));
-            // printf("Protocol: ICMP\n");
-            // printf("Source IP: %s\n", src_ip);
-            // printf("Destination IP: %s\n", dest_ip); 
-
-            packet_info.src_port = 0;
-            packet_info.dest_port = 0;
-
-            strncpy(packet_info.prot, "ICMP", sizeof(packet_info.prot));
-            packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+            printf("ARP\n");
         }
 
-        else 
+        case ETHERTYPE_IPV6: 
         {
-            // printf("Protocol: Other\n");
-
-            // printf("Protocol: Other\n");
-            // printf("Source IP: %s\n", src_ip);
-            // printf("Destination IP: %s\n", dest_ip); 
-
-            packet_info.src_port = 0;
-            packet_info.dest_port = 0;
-
-            strncpy(packet_info.prot, "Other", sizeof(packet_info.prot));
-            packet_info.prot[sizeof(packet_info.prot)-1] = '\0';
+            printf("IPV6\n");
         }
-        
-        pthread_mutex_lock(&pbuf_lock);
-
-        // printf("[RECEIVED] Src=%s | Dest=%s | Protocol=%s | src_port=%d | dest_port=%d | time=%s\n", 
-        //     packet_info.src_ip, packet_info.dest_ip, packet_info.prot, packet_info.src_port, packet_info.dest_port, packet_info.time);
-
-        /* Prevent overloading buffer array */
-        if (pbuf_active == 0)
-        {
-            packet_buffer1[pbuf_size] = packet_info;
-        }
-        else
-        {
-            packet_buffer2[pbuf_size] = packet_info;
-        }
-
-        // while (data->status != 0 && data->status != 2)
-        // {
-        //     // Wait for status = 1 to write
-        // }
-
-        // data->packet_info = packet_info;
-        // data->status = 1;
-        
-        pbuf_size++;
-        
-        pthread_mutex_unlock(&pbuf_lock);  // Always unlock
-        
-        if (pbuf_size > 10000)
-        {
-            pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
-        }
-
-        printf("src=%s dest=%s prot=%s sport=%d dport=%d time=%s\n", 
-            packet_info.src_ip, packet_info.dest_ip, packet_info.prot,
-            packet_info.src_port, packet_info.dest_port, packet_info.time);
-
-        if (counter % 10 == 0)
-            printf("%d\n", counter);
-        counter++;
-    } 
     
-    else 
-    {
-        // printf("Non-IP packet\n");
+        default:
+        {
+            printf("Non-IP packet\n");
+        }
     }
+    
+    if (counter % 100 == 0)
+        printf("%d\n", counter);
+    counter++;
 }
 
 void *pb_thread(void* args)
