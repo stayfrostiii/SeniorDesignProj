@@ -89,13 +89,6 @@ header .nav-item:hover {
   padding: 20px;
 }
 
-.grid-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-around;
-  gap: 20px;
-}
-
 /* Grid item styles */
 .grid-item {
   background-color: #1e1e1e; /* Dark box background */
@@ -104,10 +97,6 @@ header .nav-item:hover {
   padding: 20px;
   text-align: center;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); /* Subtle shadow */
-  flex: 1 1 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 2rem;
 }
 
 /* Headings */
