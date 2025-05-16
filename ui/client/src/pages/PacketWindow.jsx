@@ -6,6 +6,10 @@ export default function PacketWindow() {
   const socketRef = useRef(null);
 
   useEffect(() => {
+    if (socketRef.current) {
+      socketRef.current.close();
+    }
+    
     const socket = new WebSocket('ws://10.0.0.100:8081');
     socketRef.current = socket;
     
@@ -33,7 +37,10 @@ export default function PacketWindow() {
     };
 
     return () => {
-      socket.close();
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
     };
   }, []);
 
