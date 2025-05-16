@@ -27,7 +27,7 @@ def get_data():
         print("\n==== DEBUG: /data endpoint called ====")
         
         # Define path to logs directory
-        logs_dir = "/home/jeremy/Desktop/SeniorDesignProj/src/logs"
+        logs_dir = "/home/sdp/firewall/logs"
         print(f"DEBUG: Looking for msgpack files in: {logs_dir}")
         
         # Check if directory exists
