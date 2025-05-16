@@ -310,7 +310,10 @@ def remove_from_blacklist():
         if not rule_handleS:
             app.logger.error(f"Rule for IP {ip} not found in nftables.")
             return jsonify({"error": "IP address not found in blacklist"}), 404
-        
+
+        command = "sudo nft -a list chain bridge filter forward"
+        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
         rule_handleD = None
         for line in result.stdout.splitlines():
             if f"ip saddr {ip} drop" in line:
