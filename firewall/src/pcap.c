@@ -115,6 +115,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
     {
         case ETHERTYPE_IP: 
         {
+            printf("IPv4 ");
             const struct ip *ip_header = (struct ip *)(packet + sizeof(struct ether_header)); // Skip Ethernet header (14 bytes)
 
             // printf("Packet captured: Length = %d bytes\n", pkthdr->len);
@@ -234,6 +235,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 
         case ETHERTYPE_IPV6: 
         {
+            printf("IPv6 ");
             const struct ip6_hdr *ip6_hdr = (struct ip6_hdr *)(packet + sizeof(struct ether_header));
 
             char src_ip[INET6_ADDRSTRLEN];
