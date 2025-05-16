@@ -63,6 +63,10 @@ def add_to_blacklist():
         command = f"sudo nft add rule bridge filter forward ip saddr {ip} drop"
         subprocess.run(command, shell=True, check=True)
 
+        # Update nftables.conf to make nftable changes persistent
+        command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
+        subprocess.run(command, shell=True, check=True)
+
         app.logger.info(f"IP {ip} added to blacklist via nftables.")
         blacklist.add(ip)  # Add IP to in-memory blacklist
         return jsonify({"message": f"IP {ip} added to blacklist successfully.", "blacklist": list(blacklist)}), 200
@@ -112,6 +116,10 @@ def remove_from_blacklist():
 
         # Delete the rule using the handle
         command = f"sudo nft delete rule bridge filter forward handle {rule_handle}"
+        subprocess.run(command, shell=True, check=True)
+
+        # Update nftables.conf to make nftable changes persistent
+        command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
         subprocess.run(command, shell=True, check=True)
 
         app.logger.info(f"IP {ip} removed from blacklist via nftables.")
@@ -180,6 +188,10 @@ def add_rule():
         command += f" {data['action']}"  # Add the terminal action (e.g., drop, accept)
         subprocess.run(command, shell=True, check=True)
 
+        # Update nftables.conf to make nftable changes persistent
+        command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
+        subprocess.run(command, shell=True, check=True)
+
         # Retrieve the handle of the newly added rule
         list_command = "sudo nft -a list chain bridge filter forward"
         result = subprocess.run(list_command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -237,6 +249,10 @@ def delete_rule(rule_id):
         # Delete the rule using the handle
         delete_command = f"sudo nft delete rule bridge filter forward handle {rule_handle}"
         subprocess.run(delete_command, shell=True, check=True)
+
+        # Update nftables.conf to make nftable changes persistent
+        command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
+        subprocess.run(command, shell=True, check=True)
 
         app.logger.info(f"Rule with handle {rule_handle} deleted from nftables.")
         return jsonify({"message": f"Rule with handle {rule_handle} deleted successfully."}), 200
