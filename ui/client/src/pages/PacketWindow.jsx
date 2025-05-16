@@ -5,16 +5,16 @@ export default function PacketWindow() {
   const tableRef = useRef(null);
 
   useEffect(() => {
-    // Connect to the /packet-stream endpoint using EventSource
-    const eventSource = new EventSource("http://127.0.0.1:8080/packet-stream");
-
-    eventSource.onmessage = (event) => {
+    const socket = new WebSocket('ws://0.0.0.0:8081');
+    
+    socket.onopen = () => console.log("WebSocket: connected");
+    socket.onmessage = (event) => {
       const packet = JSON.parse(event.data);
 
       // Add the new packet to the top of the list
       setPackets((prevPackets) => {
         const updatedPackets = [packet, ...prevPackets]; // Add new packet at the top
-        if (updatedPackets.length > 50) {
+        if (updatedPackets.length > 21) {
           updatedPackets.pop(); // Remove the last packet if the list exceeds 50
         }
         return updatedPackets;
@@ -26,13 +26,15 @@ export default function PacketWindow() {
       }
     };
 
-    eventSource.onerror = () => {
-      console.error("Error connecting to the packet stream.");
-      eventSource.close();
+    socket.onerror = (e) => {
+      console.error("WebSocket: error", e);
+    };
+    socket.onclose = (e) => {
+      console.warn("WebSocket: closed", e);
     };
 
     return () => {
-      eventSource.close();
+      socket.close();
     };
   }, []);
 
@@ -59,29 +61,30 @@ export default function PacketWindow() {
         <table
           style={{
             width: "100%",
+            tableLayout: "fixed",
             borderCollapse: "collapse",
             border: "1px solid #333", // Add grid lines
           }}
         >
           <thead>
             <tr>
-              <th style={{ border: "1px solid #333" }}>Timestamp</th>
-              <th style={{ border: "1px solid #333" }}>Source IP</th>
-              <th style={{ border: "1px solid #333" }}>Destination IP</th>
-              <th style={{ border: "1px solid #333" }}>Protocol</th>
-              <th style={{ border: "1px solid #333" }}>Source Port</th>
-              <th style={{ border: "1px solid #333" }}>Destination Port</th>
+              <th style={{ width: "20%", maxWidth: "20%", border: "1px solid #333" }}>Timestamp</th>
+              <th style={{ width: "22%", maxWidth: "22%", border: "1px solid #333" }}>Source IP</th>
+              <th style={{ width: "22%", maxWidth: "22%", border: "1px solid #333" }}>Destination IP</th>
+              <th style={{ width: "12%", maxWidth: "12%", border: "1px solid #333" }}>Protocol</th>
+              <th style={{ width: "12%", maxWidth: "12%", border: "1px solid #333" }}>Source Port</th>
+              <th style={{ width: "12%", maxWidth: "12%", border: "1px solid #333" }}>Destination Port</th>
             </tr>
           </thead>
           <tbody>
             {packets.map((packet, index) => (
               <tr key={index}>
-                <td style={{ border: "1px solid #333" }}>{packet.timestamp}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.source_ip}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.dest_ip}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.protocol}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.source_port}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.dest_port}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.time}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.src_ip}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.dest_ip}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.prot}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.src_port}</td>
+                <td style={{ wordWrap: "break-word", whiteSpace: "normal", border: "1px solid #333" }}>{packet.dest_port}</td>
               </tr>
             ))}
           </tbody>
