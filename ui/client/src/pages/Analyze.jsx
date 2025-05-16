@@ -43,8 +43,6 @@ export default function Analyze() {
         return;
       }
       
-      console.log("Received data:", data); // For debugging
-      
       // Update performance metrics
       if (data.performanceMetrics) {
         setPerformanceMetrics(data.performanceMetrics);
@@ -67,7 +65,7 @@ export default function Analyze() {
         setTopTalkers(data.topTalkers);
       }
       
-      // Update current file
+      // We still update the currentFile state but don't display it
       if (data.currentFile) {
         setCurrentFile(data.currentFile);
       }
@@ -83,19 +81,12 @@ export default function Analyze() {
 
   return (
     <div className="page-container page-container-2x2">
-      {/* Status/Info Bar */}
-      {(currentFile || error) && (
+      {/* Only show error messages, not current file */}
+      {error && (
         <div style={{ gridColumn: "1 / -1", marginBottom: "20px" }}>
-          {currentFile && !error && (
-            <div className="file-info">
-              Current file: {currentFile}
-            </div>
-          )}
-          {error && (
-            <div className="file-info" style={{ borderColor: "#ff4d4f", backgroundColor: "#fff2f0" }}>
-              <span style={{ color: "#ff4d4f" }}>Error: {error}</span>
-            </div>
-          )}
+          <div className="file-info" style={{ borderColor: "#ff4d4f", backgroundColor: "#fff2f0" }}>
+            <span style={{ color: "#ff4d4f" }}>Error: {error}</span>
+          </div>
         </div>
       )}
 

@@ -163,10 +163,11 @@ def get_data():
                 
                 # Prepare response data
                 response_data = {
-                    "performanceMetrics": {
+                    "performanceMetrics": 
+                    {
                         "totalPackets": total_packets,
-                        "avgProcessingTime": round(2.5 + (current_file_index % 3), 2),  # simulated processing time
-                        "dropRate": round((total_packets % 7) * 0.1, 2)  # simulated drop rate
+                        "avgProcessingTime": round(2.5 + (current_file_index % 3), 2), 
+                        "dropRate": round((total_packets % 7) * 0.1, 2)  
                     },
                     "trafficVolume": {
                         "time": current_time,
