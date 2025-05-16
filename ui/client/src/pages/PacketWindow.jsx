@@ -65,12 +65,12 @@ export default function PacketWindow() {
         >
           <thead>
             <tr>
-              <th style={{ width: "16%", border: "1px solid #333" }}>Timestamp</th>
-              <th style={{ width: "18%", border: "1px solid #333" }}>Source IP</th>
-              <th style={{ width: "18%", border: "1px solid #333" }}>Destination IP</th>
-              <th style={{ width: "16%", border: "1px solid #333" }}>Protocol</th>
-              <th style={{ width: "16%", border: "1px solid #333" }}>Source Port</th>
-              <th style={{ width: "16%", border: "1px solid #333" }}>Destination Port</th>
+              <th style={{ width: "20%", border: "1px solid #333" }}>Timestamp</th>
+              <th style={{ width: "22%", border: "1px solid #333" }}>Source IP</th>
+              <th style={{ width: "22%", border: "1px solid #333" }}>Destination IP</th>
+              <th style={{ width: "12%", border: "1px solid #333" }}>Protocol</th>
+              <th style={{ width: "12%", border: "1px solid #333" }}>Source Port</th>
+              <th style={{ width: "12%", border: "1px solid #333" }}>Destination Port</th>
             </tr>
           </thead>
           <tbody>
