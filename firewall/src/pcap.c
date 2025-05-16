@@ -521,7 +521,8 @@ int main()
      
     /* Take the first device */
     dev = allDevs;
-    dev = dev->next; // Select ethernet port going to host from pi
+    dev = dev->next; 
+    dev = dev->next; // Select bridge interface br0
     printf("%s\n", dev->name);
 
     /* Open capturing sesh */
