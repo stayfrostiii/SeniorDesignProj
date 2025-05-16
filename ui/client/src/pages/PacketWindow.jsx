@@ -26,7 +26,8 @@ export default function PacketWindow() {
     };
 
     socket.onerror = (error) => {
-      alert(error);
+      console.error('WebSocket error event:', error);
+      alert("WebSocket connection error");
     };
 
     return () => {
