@@ -306,7 +306,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
                     break;
                 }
 
-                case IPPROTO_ICMP:
+                case IPPROTO_ICMPV6:
                 {
                     icmp_header = (struct icmphdr *)(packet + sizeof(struct ether_header) + 40);
                     /*
