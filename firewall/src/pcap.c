@@ -237,8 +237,8 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             int dest_port = 0;
 
             // Extract IP header information
-            inet_ntop(AF_INET6, &(ip6_hdr->ip_src), src_ip, INET6_ADDRSTRLEN);
-            inet_ntop(AF_INET6, &(ip6_hdr->ip_dst), dest_ip, INET6_ADDRSTRLEN);
+            inet_ntop(AF_INET6, &(ip6_hdr->ip6_src), src_ip, INET6_ADDRSTRLEN);
+            inet_ntop(AF_INET6, &(ip6_hdr->ip6_dst), dest_ip, INET6_ADDRSTRLEN);
 
             strncpy(packet_info.src_ip, src_ip, INET6_ADDRSTRLEN);
             strncpy(packet_info.dest_ip, dest_ip, INET6_ADDRSTRLEN);
@@ -246,7 +246,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             packet_info.src_ip[INET6_ADDRSTRLEN - 1] = '\0';
             packet_info.dest_ip[INET6_ADDRSTRLEN - 1] = '\0';
 
-            switch(ip6_hdr->ip_p)
+            switch(ip6_hdr->ip6_nxt)
             {
                 case IPPROTO_TCP:
                 {                
