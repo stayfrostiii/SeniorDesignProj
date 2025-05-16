@@ -436,12 +436,16 @@ void *pb_thread(void* args)
         // Do the rest of the processing
         char file_name[32] = "./logs/packets";
         char temp[4];
-
+        
         pbuf_active = !pbuf_active;
 
+        int inactive_buffer = !pbuf_active;
         for (int i = 0; i < pbuf_size; i++)
         {
-            serialize_packet(&packet_buffer1[i], &pk, &sbuf);
+            if (inactive_buffer == 0)
+                serialize_packet(&packet_buffer1[i], &pk, &sbuf);
+            else
+                serialize_packet(&packet_buffer2[i], &pk, &sbuf);
         }
 
         pbuf_size = 0;  // Reset pbuf_size
@@ -453,6 +457,7 @@ void *pb_thread(void* args)
         FILE *file = fopen(file_name, "wb");
         fwrite(sbuf.data, 1, sbuf.size, file);
         fclose(file);
+        msgpack_sbuffer_clear(&sbuf);
 
         logFile_counter++;
         if (logFile_counter > 9)
