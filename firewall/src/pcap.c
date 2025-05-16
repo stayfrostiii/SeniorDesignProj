@@ -366,11 +366,14 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 
     while (data->status != 0 && data->status != 2)
     {
-        // Wait for status = 1 to write
+        // Wait for status = 0 to write
     }
 
-    data->packet_info = packet_info;
-    data->status = 1;
+    if (strcmp(packet_info.prot, "mDNS") != 0)
+    {
+        data->packet_info = packet_info;
+        data->status = 1;
+    }
     
     pbuf_size++;
     
