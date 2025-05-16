@@ -65,23 +65,23 @@ export default function PacketWindow() {
         >
           <thead>
             <tr>
-              <th style={{ border: "1px solid #333" }}>Timestamp</th>
-              <th style={{ border: "1px solid #333" }}>Source IP</th>
-              <th style={{ border: "1px solid #333" }}>Destination IP</th>
-              <th style={{ border: "1px solid #333" }}>Protocol</th>
-              <th style={{ border: "1px solid #333" }}>Source Port</th>
-              <th style={{ border: "1px solid #333" }}>Destination Port</th>
+              <th style={{ width: "160px", border: "1px solid #333" }}>Timestamp</th>
+              <th style={{ width: "160px", border: "1px solid #333" }}>Source IP</th>
+              <th style={{ width: "160px", border: "1px solid #333" }}>Destination IP</th>
+              <th style={{ width: "160px", border: "1px solid #333" }}>Protocol</th>
+              <th style={{ width: "160px", border: "1px solid #333" }}>Source Port</th>
+              <th style={{ width: "160px", border: "1px solid #333" }}>Destination Port</th>
             </tr>
           </thead>
           <tbody>
             {packets.map((packet, index) => (
               <tr key={index}>
-                <td style={{ border: "1px solid #333" }}>{packet.time}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.src_ip}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.dest_ip}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.prot}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.src_port}</td>
-                <td style={{ border: "1px solid #333" }}>{packet.dest_port}</td>
+                <td style={cellStyle}>{packet.time}</td>
+                <td style={cellStyle}>{packet.src_ip}</td>
+                <td style={cellStyle}>{packet.dest_ip}</td>
+                <td style={cellStyle}>{packet.prot}</td>
+                <td style={cellStyle}>{packet.src_port}</td>
+                <td style={cellStyle}>{packet.dest_port}</td>
               </tr>
             ))}
           </tbody>
