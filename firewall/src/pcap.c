@@ -260,7 +260,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
         }
     }
     
-    if (counter % 100 == 0)
+    // if (counter % 100 == 0)
         printf("%d\n", counter);
     counter++;
 }
