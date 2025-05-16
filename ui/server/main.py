@@ -19,7 +19,6 @@ last_processed_time = 0
 blacklist = set()  # Use a set for faster lookups and to avoid duplicates
 rules = []
 @app.route("/data", methods=['GET'])
-@app.route("/data", methods=['GET'])
 def get_data():
  
     global current_file_index, last_processed_time
