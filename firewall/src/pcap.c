@@ -127,17 +127,11 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
             int dest_port = 0;
 
             // Extract IP header information
-            // inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
-            // inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
-
-            // strncpy(packet_info.src_ip, src_ip, INET_ADDRSTRLEN);
-            // strncpy(packet_info.dest_ip, dest_ip, INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(ip_header->ip_src), src_ip, INET_ADDRSTRLEN);
+            inet_ntop(AF_INET, &(ip_header->ip_dst), dest_ip, INET_ADDRSTRLEN);
 
             snprintf(packet_info.src_ip, sizeof(packet_info.src_ip), "%s", src_ip);
             snprintf(packet_info.dest_ip, sizeof(packet_info.dest_ip), "%s", dest_ip);
-
-            packet_info.src_ip[INET_ADDRSTRLEN - 1] = '\0';
-            packet_info.dest_ip[INET_ADDRSTRLEN - 1] = '\0';
 
             switch(ip_header->ip_p)
             {
