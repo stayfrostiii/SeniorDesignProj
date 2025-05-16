@@ -396,10 +396,10 @@ int main()
      
     /* Take the first device */
     dev = allDevs;
-    printf("%s\n", dev.name);
+    printf("%s\n", dev->name);
 
     /* Open capturing sesh */
-    handle = pcap_create(dev.name, errbuf);
+    handle = pcap_create(dev->name, errbuf);
     if (handle == NULL)
     {
         printf("%s\n", errbuf);
