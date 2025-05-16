@@ -679,7 +679,7 @@ void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, 
 
     pthread_mutex_unlock(&pbuf_lock);  // Always unlock
     
-    if (pbuf_size > 10000)
+    if (pbuf_size > 1000)
     {
         pthread_cond_signal(&pbuf_cond);  // Notify the waiting thread
     }
@@ -708,7 +708,7 @@ void *pb_thread(void* args)
         pthread_mutex_lock(&pbuf_lock);
 
         // Wait until the condition is met (pbuf_size > 10000)
-        while (pbuf_size <= 10000)
+        while (pbuf_size <= 1000)
         {
             pthread_cond_wait(&pbuf_cond, &pbuf_lock);
         }
