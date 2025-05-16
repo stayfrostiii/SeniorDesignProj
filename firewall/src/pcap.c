@@ -80,10 +80,8 @@ int pbuf_size = 0;
 int pbuf_active = 0;
 int logFile_counter = 0;
 
-void serialize_packet(Packet *p, msgpack_packer *pk, msgpack_sbuffer *sbuf)
+void serialize_packet(Packet *p, msgpack_packer *pk)
 {
-    msgpack_sbuffer_clear(sbuf);
-
     msgpack_pack_map(pk, 3);  // 3 key-value pairs (src_ip, dst_ip, protocol)
     
     // src_ip
@@ -103,12 +101,6 @@ void serialize_packet(Packet *p, msgpack_packer *pk, msgpack_sbuffer *sbuf)
     msgpack_pack_str_body(pk, "protocol", strlen("protocol"));
     msgpack_pack_str(pk, strlen(p->prot));
     msgpack_pack_str_body(pk, p->prot, strlen(p->prot));
-
-    // time
-    msgpack_pack_str(pk, strlen("time"));
-    msgpack_pack_str_body(pk, "time", strlen("time"));
-    msgpack_pack_str(pk, strlen(p->time));
-    msgpack_pack_str_body(pk, p->time, strlen(p->time));
 }
 
 void packet_handler(unsigned char *user_data, const struct pcap_pkthdr *pkthdr, const unsigned char *packet) 
@@ -443,9 +435,9 @@ void *pb_thread(void* args)
         for (int i = 0; i < pbuf_size; i++)
         {
             if (inactive_buffer == 0)
-                serialize_packet(&packet_buffer1[i], &pk, &sbuf);
+                serialize_packet(&packet_buffer1[i], &pk);
             else
-                serialize_packet(&packet_buffer2[i], &pk, &sbuf);
+                serialize_packet(&packet_buffer2[i], &pk);
         }
 
         pbuf_size = 0;  // Reset pbuf_size
