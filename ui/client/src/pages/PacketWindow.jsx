@@ -5,9 +5,17 @@ export default function PacketWindow() {
   const tableRef = useRef(null);
 
   useEffect(() => {
-    const savedPackets = sessionStorage.getItem("packets");
-    if (savedPackets) {
-      setPackets(JSON.parse(savedPackets));
+    try {
+      const savedPackets = sessionStorage.getItem("packets");
+      if (savedPackets) {
+        const parsedPackets = JSON.parse(savedPackets);
+        if (Array.isArray(parsedPackets)) {
+          setPackets(parsedPackets);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to parse packets from sessionStorage:", err);
+      sessionStorage.removeItem("packets"); // clean up if corrupted
     }
 
     const socket = new WebSocket('ws://10.0.0.100:8081');
@@ -38,6 +46,7 @@ export default function PacketWindow() {
     };
 
     return () => {
+      sessionStorage.removeItem("packets");
       socket.close();
     };
   }, []);
