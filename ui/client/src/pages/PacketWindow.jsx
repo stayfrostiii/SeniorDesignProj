@@ -5,6 +5,11 @@ export default function PacketWindow() {
   const tableRef = useRef(null);
 
   useEffect(() => {
+    const savedPackets = sessionStorage.getItem("packets");
+    if (savedPackets) {
+      setPackets(JSON.parse(savedPackets));
+    }
+
     const socket = new WebSocket('ws://10.0.0.100:8081');
     
     socket.onmessage = (event) => {
@@ -16,6 +21,8 @@ export default function PacketWindow() {
         if (updatedPackets.length > 21) {
           updatedPackets.pop(); // Remove the last packet if the list exceeds 50
         }
+        
+        sessionStorage.setItem("packets", JSON.stringify(updatedPackets));
         return updatedPackets;
       });
 
