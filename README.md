@@ -2,7 +2,6 @@
 ## Authors: J. Wulf, J. Tung, D. Zheng
 ### Link to project: https://github.com/stayfrostiii/SeniorDesignProj
 ### Link to demo (4 min version): https://youtu.be/nHRneyYoXfI
-### Link to demo (1 min version): https://youtu.be/mGJSxie0w6g
 ## Requirements
 - Raspberry Pi with Ubuntu Server OS installed
 - USB to ethernet adapter for extra ethernet connection
