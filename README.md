@@ -1,10 +1,15 @@
 # Hardware Firewall
 ## Authors: J. Wulf, J. Tung, D. Zheng
+### Link to project: https://github.com/stayfrostiii/SeniorDesignProj
+### Link to demo (4 min version): https://youtu.be/nHRneyYoXfI
+### Link to demo (1 min version): https://youtu.be/mGJSxie0w6g
 ## Requirements
 - Raspberry Pi with Ubuntu Server OS installed
 - USB to ethernet adapter for extra ethernet connection
 - 2 ethernet cables
 - Power source for the Pi
+## Structure of Project
+There are 3 main parts to the project: UI (Frontend), UI (Backend), and Packet Capture. The UI (Frontend) is implemented using React.js, the UI (Backend) is implemented using in Python using Flask and WebSockets, and the Packet Capture application is implemented in C with various C libraries. All of these parts must be running at the same time for the project to work.
 ## How To Build
 ### UI (Frontend)
 CD into the /ui/client folder of the project. Once in the directory, run 
