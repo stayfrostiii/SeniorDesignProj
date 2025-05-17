@@ -258,8 +258,6 @@ def add_to_blacklist():
         # Run the Linux command to blacklist the IP as source/destination
         command = f"sudo nft add rule bridge filter forward ip saddr {ip} drop"
         subprocess.run(command, shell=True, check=True)
-        command = f"sudo nft add rule bridge filter forward ip daddr {ip} drop"
-        subprocess.run(command, shell=True, check=True)
 
         # Update nftables.conf to make nftable changes persistent
         command = f"sudo nft list ruleset | sudo tee /etc/nftables.conf > /dev/null"
